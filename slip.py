@@ -35,7 +35,6 @@ Output_Plots     = configs.get('Output', 'Generate plots')
 # MAIN
 print('SchuellerLab Ligand Priorization Pipepline - version {v}'.format(v = __version__))
 
-
 in_df = pd.read_csv(Input_Interactions,
                     sep = '\t',
                     names = ['Fold', 'Query ligand ChEMBL ID', 'Hit target ChEMBL ID', 'Similarity measure', 'Hit ligand ID', 'Query target ID', 'TP'],
