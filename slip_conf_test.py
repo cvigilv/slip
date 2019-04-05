@@ -1,11 +1,19 @@
-#   SLIP CONFIGURATION FILE
+[Input]
+Interactions file =
+Broad file =
+ChEMBL version =
 
-#   FILTER OPTIONS
-Keep_Predicted_Target = 'CHEMBL244'
-commonPfam_cutoff = 0
-TopX_cutoff = 100
-Tc_min = 0.7
-Tc_max = 1.0
-mphase_min = 0
-mphase_max = 4
-reference_ligands = ''
+[Options]
+Keep target =
+Keep ligand =
+Pfam cutoff =
+Top X entries =
+min(Similarity) =
+max(Similarity) =
+min(Clinical Phase) =
+max(Clinical Phase) =
+
+[Output]
+Output directory =
+Output file =
+Generate plots =
