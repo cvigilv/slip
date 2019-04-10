@@ -9,6 +9,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from configparser import ConfigParser
+import datetime
+
 
 # SETTINGS
 configs = ConfigParser()
@@ -23,33 +25,50 @@ Opt_JustLigand       = configs.get('Options', 'Keep ligand')
 Opt_PfamCutoff       = configs.getint('Options', 'Pfam cutoff')
 Opt_SimilarityMeasure= configs.get('Options', 'Similarity measure used')
 Opt_TopX             = configs.getint('Options', 'Top X entries')
-Opt_minSimilarity    = configs.getint('Options', 'min(Similarity)')
-Opt_maxSimilarity    = configs.getint('Options', 'max(Similarity)')
+Opt_minSimilarity    = configs.getfloat('Options', 'min(Similarity)')
+Opt_maxSimilarity    = configs.getfloat('Options', 'max(Similarity)')
 Opt_minClinicalPhase = configs.getint('Options', 'min(Clinical Phase)')
 Opt_maxClinicalPhase = configs.getint('Options', 'max(Clinical Phase)')
 
 Output_Directory = configs.get('Output', 'Output directory')
 Output_File      = configs.get('Output', 'Output file')
-Output_Plots     = configs.get('Output', 'Generate plots')
+Output_Plots     = configs.getboolean('Output', 'Generate plots')
 
 # FUNCTIONS
 
 # MAIN
 print('SchuellerLab Ligand Priorization Pipepline - version {v}'.format(v = __version__))
-
+print('Start time: {time}'.format(time = datetime.datetime.now()))
+print('\nLoading output file to dataframe...',end = '\r')
 in_df = pd.read_csv(Input_Interactions,
                     sep = '\t',
                     names = ['Fold', 'Query ligand ChEMBL ID', 'Hit target ChEMBL ID', 'Similarity measure', 'Hit ligand ID', 'Query target ID', 'TP'],
                     header = None,
                     index_col = False) # Hardcoded options
 
-print(in_df.head())
-print(in_df.describe())
+print('Loading output file to dataframe... DONE!')
+print('\nSummary of output file:')
+print(in_df.info(memory_usage='deep'))
 
-sns.boxplot(x = 'TP', y = 'Similarity measure', data = in_df)
-plt.ylabel(Opt_SimilarityMeasure)
-plt.show()
+if Output_Plots == True:
+    print('Saving distribution plot for output file...',end = '\r')
+    sns.boxplot(x = 'TP', y = 'Similarity measure', data = in_df)
+    plt.ylabel(Opt_SimilarityMeasure)
+    plt.title('{sim} distribution separated by TP'.format(sim = Opt_SimilarityMeasure))
+    plt.savefig(Input_Interactions+'.distribution.png', dpi = 300)
+    plt.cla()
+    print('Saving distribution plot for output file... DONE!')
 
-sns.violinplot(x = 'TP', y = 'Similarity measure', data = in_df, cut = 0, split = True)
-plt.ylabel(Opt_SimilarityMeasure)
-plt.show()
+print('\nFiltering output by {sim} in range ]{min}, {max}]...'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)), end = '\r')
+in_df = in_df[(in_df['Similarity measure'] <= Opt_maxSimilarity) & (in_df['Similarity measure'] > Opt_minSimilarity)]
+print('Filtering output by {sim} in range ]{min}, {max}]... DONE!'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
+
+print(in_df.info(memory_usage = 'deep'))
+if Output_Plots == True:
+    print('Saving distribution plot for filtered output file...',end = '\r')
+    sns.boxplot(x = 'TP', y = 'Similarity measure', data = in_df)
+    plt.ylabel(Opt_SimilarityMeasure)
+    plt.title('{sim} distribution for range ]{min}, {max}] separated by TP'.format(sim = Opt_SimilarityMeasure,  min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
+    plt.savefig(Input_Interactions+'.filtered_distribution_1.png', dpi = 300)
+    plt.cla()
+    print('Saving distribution plot for filtered output file... DONE!')
