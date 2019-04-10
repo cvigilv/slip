@@ -34,7 +34,23 @@ Output_Directory = configs.get('Output', 'Output directory')
 Output_File      = configs.get('Output', 'Output file')
 Output_Plots     = configs.getboolean('Output', 'Generate plots')
 
+if Opt_SimilarityMeasure == '': Opt_SimilarityMeasure = 'Similarity measure'
+
+color_neg = '#527AB2'
+color_pos = '#FF4528'
+colours_TP = {0: color_neg, 1: color_pos}
+
+
 # FUNCTIONS
+def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i for i in range(0,21)]):
+    for i, state in enumerate(states):
+        plt.hist(df[df[column] == state]['Similarity measure'], density = True, color = colours[i], label = labels[i], alpha = 0.5, bins = bins)
+    plt.xlabel(Opt_SimilarityMeasure)
+    plt.ylabel('Relative count (%)')
+    plt.legend(title = column)
+    plt.title('{sim} distribution separated by {column}'.format(sim = Opt_SimilarityMeasure, column = column))
+    plt.savefig(filename, dpi = 300)
+    plt.cla()
 
 # MAIN
 print('SchuellerLab Ligand Priorization Pipepline - version {v}'.format(v = __version__))
@@ -52,20 +68,13 @@ print(in_df.info(memory_usage='deep'))
 
 if Output_Plots == True:
     print('Saving distribution plot for output file...',end = '\r')
-    sns.boxplot(x = 'TP', y = 'Similarity measure', data = in_df)
+    sns.boxplot(x = 'TP', y = 'Similarity measure', data = in_df, palette = colours_TP)
     plt.ylabel(Opt_SimilarityMeasure)
     plt.title('{sim} distribution separated by TP'.format(sim = Opt_SimilarityMeasure))
     plt.savefig(Input_Interactions+'.distribution_boxplot.png', dpi = 300)
     plt.cla()
 
-    plt.hist(in_df[in_df['TP'] == 0]['Similarity measure'], density = True, color = 'blue', label = '0', alpha = 0.75, bins = [0.05*i for i in range(0,21)])
-    plt.hist(in_df[in_df['TP'] == 1]['Similarity measure'], density = True, color = 'orange', label = '1', alpha = 0.75, bins = [0.05*i for i in range(0,21)])
-    plt.xlabel(Opt_SimilarityMeasure)
-    plt.ylabel('Relative count (%)')
-    plt.legend(title = 'TP')
-    plt.title('{sim} distribution separated by TP'.format(sim = Opt_SimilarityMeasure))
-    plt.savefig(Input_Interactions+'.distribution_hist.png', dpi = 300)
-    plt.cla()
+    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Input_Interactions+'.distribution_hist.png')
 
     print('Saving distribution plot for output file... DONE!')
 
@@ -77,20 +86,12 @@ print(in_df.info(memory_usage = 'deep'))
 
 if Output_Plots == True:
     print('Saving distribution plot for filtered output file...',end = '\r')
-    sns.boxplot(x = 'TP', y = 'Similarity measure', data = in_df)
+    sns.boxplot(x = 'TP', y = 'Similarity measure', data = in_df, palette = colours_TP)
     plt.ylabel(Opt_SimilarityMeasure)
     plt.title('{sim} distribution for range ]{min}, {max}] separated by TP'.format(sim = Opt_SimilarityMeasure,  min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
     plt.savefig(Input_Interactions+'.filtered_distribution_1.png', dpi = 300)
     plt.cla()
 
-    bin_dif = (Opt_maxSimilarity - Opt_minSimilarity)/20
-    plt.hist(in_df[in_df['TP'] == 0]['Similarity measure'], density = True, color = 'blue', label = '0', alpha = 0.75, bins = [Opt_minSimilarity + bin_dif * i for i in range(0,21)])
-    plt.hist(in_df[in_df['TP'] == 1]['Similarity measure'], density = True, color = 'orange', label = '1', alpha = 0.75, bins = [Opt_minSimilarity + bin_dif * i for i in range(0,21)])
-    plt.xlabel(Opt_SimilarityMeasure)
-    plt.ylabel('Relative count (%)')
-    plt.legend(title = 'TP')
-    plt.title('{sim} distribution for range ]{min}, {max}] separated by TP'.format(sim = Opt_SimilarityMeasure,  min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
-    plt.savefig(Input_Interactions+'.distribution_hist_1.png', dpi = 300)
-    plt.cla()
+    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Input_Interactions+'.filtered_dist_hist.png', bins = [Opt_minSimilarity + (Opt_maxSimilarity - Opt_minSimilarity)/20 * i for i in range(0,21)])
 
     print('Saving distribution plot for filtered output file... DONE!')
