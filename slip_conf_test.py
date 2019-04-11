@@ -1,5 +1,5 @@
 [Input]
-Interactions file = /Users/cvigilv/Dropbox/Chembl22_goldStd3_max.txt.co.pokfilt.fp2.k1.LV.out.bugfixed.sorted.Fold
+Interactions file = /Users/cvigilv/Dropbox/Chembl22_goldStd3_max.txt.co.pokfilt.fp2.k1.LV.out.bugfixed.sorted.Fold.r1000
 Broad file =
 ChEMBL version =
 
