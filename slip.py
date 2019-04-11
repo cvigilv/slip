@@ -55,12 +55,15 @@ def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i f
 # MAIN
 print('SchuellerLab Ligand Priorization Pipepline - version {v}'.format(v = __version__))
 print('Start time: {time}'.format(time = datetime.datetime.now()))
-print('\nLoading output file to dataframe...', end = '\r')
+
+# Load output file to pandas dataframe
+print('\nLoading output file to dataframe...')
 in_df = pd.read_csv(Input_Interactions,
                     sep = '\t',
                     names = ['Fold', 'Query ligand ChEMBL ID', 'Hit target ChEMBL ID', Opt_SimilarityMeasure, 'Hit ligand ID', 'Query target ID', 'TP'],
                     header = None,
                     index_col = False) # Hardcoded options
+
 print('--> Cleaning output file from buggy entries...',end = '\r')
 in_df = in_df[in_df[Opt_SimilarityMeasure] >= 0]
 print('--> Cleaning output file from buggy entries... DONE!')
@@ -78,8 +81,8 @@ if Output_Plots == True:
     print('--> Saving distribution plot for output file... DONE!')
 print('Loading output file to dataframe... DONE!')
 
-
-print('Filtering output by {sim} in range ]{min}, {max}]...'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)), end = '\r')
+# Filter output file based in similarity measure threshold
+print('Filtering output by {sim} in range ]{min}, {max}]...'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
 in_df = in_df[(in_df[Opt_SimilarityMeasure] <= Opt_maxSimilarity) & (in_df[Opt_SimilarityMeasure] > Opt_minSimilarity)]
 
 if Output_Plots == True:
@@ -95,7 +98,7 @@ if Output_Plots == True:
     print('--> Saving distribution plot for filtered output file... DONE!')
 print('Filtering output by {sim} in range ]{min}, {max}]... DONE!'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
 
-
+# Add SMILES from SMILES file to query ligand based on ChEMBL ID
 print('Adding SMILES for query ligand...', end = '\r')
 smiles_df = pd.read_csv('/Users/cvigilv/Dropbox/Chembl22_goldStd3_max.txt.ul.co',
                         sep = '\t',
@@ -104,3 +107,13 @@ smiles_df = pd.read_csv('/Users/cvigilv/Dropbox/Chembl22_goldStd3_max.txt.ul.co'
                         index_col = False)
 in_df = pd.merge(in_df, smiles_df, on = 'Query ligand ChEMBL ID', how = 'left')
 print('Adding SMILES for query ligand... DONE!' )
+
+# Add information for query ligand and predicted target for next filters
+print('Adding information for query ligand...')
+print('--> Loading broad selection of ChEMBL to memory...', end = '\r')
+broad_df = pd.read_csv(Input_Broad,
+                        sep = '\t',
+                        index_col = False,
+                        low_memory = False)
+broad_df = broad_df.rename(columns = {'chembl_id':'Target ChEMBL ID','chembl_id.1':'Ligand ChEMBL ID'})
+print('--> Loading broad selection of ChEMBL to memory... DONE!')
