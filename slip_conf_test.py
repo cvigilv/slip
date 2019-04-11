@@ -1,7 +1,7 @@
 [Input]
 Interactions file = /Users/cvigilv/Dropbox/Chembl22_goldStd3_max.txt.co.pokfilt.fp2.k1.LV.out.bugfixed.sorted.Fold.r1000
-Broad file =
-ChEMBL version =
+Broad file = /Users/cvigilv/Dropbox/chembl22_broad2.txt
+ChEMBL version = chembl_22
 
 [Options]
 Keep target =
