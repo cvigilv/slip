@@ -58,7 +58,7 @@ print('Start time: {time}'.format(time = datetime.datetime.now()))
 print('\nLoading output file to dataframe...',end = '\r')
 in_df = pd.read_csv(Input_Interactions,
                     sep = '\t',
-                    names = ['Fold', 'Query ligand ChEMBL ID', 'Hit target ChEMBL ID', 'Similarity measure', 'Hit ligand ID', 'Query target ID', 'TP'],
+                    names = ['Fold', 'Query ligand ChEMBL ID', 'Hit target ChEMBL ID', Opt_SimilarityMeasure, 'Hit ligand ID', 'Query target ID', 'TP'],
                     header = None,
                     index_col = False) # Hardcoded options
 
