@@ -44,7 +44,7 @@ colours_TP = {0: color_neg, 1: color_pos}
 # FUNCTIONS
 def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i for i in range(0,21)]):
     for i, state in enumerate(states):
-        plt.hist(df[df[column] == state]['Similarity measure'], density = True, color = colours[i], label = labels[i], alpha = 0.5, bins = bins)
+        plt.hist(df[df[column] == state][Opt_SimilarityMeasure], density = True, color = colours[i], label = labels[i], alpha = 0.5, bins = bins)
     plt.xlabel(Opt_SimilarityMeasure)
     plt.ylabel('Relative count (%)')
     plt.legend(title = column)
@@ -55,20 +55,19 @@ def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i f
 # MAIN
 print('SchuellerLab Ligand Priorization Pipepline - version {v}'.format(v = __version__))
 print('Start time: {time}'.format(time = datetime.datetime.now()))
-print('\nLoading output file to dataframe...',end = '\r')
+print('\nLoading output file to dataframe...', end = '\r')
 in_df = pd.read_csv(Input_Interactions,
                     sep = '\t',
                     names = ['Fold', 'Query ligand ChEMBL ID', 'Hit target ChEMBL ID', Opt_SimilarityMeasure, 'Hit ligand ID', 'Query target ID', 'TP'],
                     header = None,
                     index_col = False) # Hardcoded options
-
-print('Loading output file to dataframe... DONE!')
-print('\nSummary of output file:')
-print(in_df.info(memory_usage='deep'))
+print('--> Cleaning output file from buggy entries...',end = '\r')
+in_df = in_df[in_df[Opt_SimilarityMeasure] >= 0]
+print('--> Cleaning output file from buggy entries... DONE!')
 
 if Output_Plots == True:
-    print('Saving distribution plot for output file...',end = '\r')
-    sns.boxplot(x = 'TP', y = 'Similarity measure', data = in_df, palette = colours_TP)
+    print('--> Saving distribution plot for output file...',end = '\r')
+    sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
     plt.ylabel(Opt_SimilarityMeasure)
     plt.title('{sim} distribution separated by TP'.format(sim = Opt_SimilarityMeasure))
     plt.savefig(Input_Interactions+'.distribution_boxplot.png', dpi = 300)
@@ -76,17 +75,16 @@ if Output_Plots == True:
 
     TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Input_Interactions+'.distribution_hist.png')
 
-    print('Saving distribution plot for output file... DONE!')
+    print('--> Saving distribution plot for output file... DONE!')
+print('Loading output file to dataframe... DONE!')
 
 
-print('\nFiltering output by {sim} in range ]{min}, {max}]...'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)), end = '\r')
-in_df = in_df[(in_df['Similarity measure'] <= Opt_maxSimilarity) & (in_df['Similarity measure'] > Opt_minSimilarity)]
-print('Filtering output by {sim} in range ]{min}, {max}]... DONE!'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
-print(in_df.info(memory_usage = 'deep'))
+print('Filtering output by {sim} in range ]{min}, {max}]...'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)), end = '\r')
+in_df = in_df[(in_df[Opt_SimilarityMeasure] <= Opt_maxSimilarity) & (in_df[Opt_SimilarityMeasure] > Opt_minSimilarity)]
 
 if Output_Plots == True:
-    print('Saving distribution plot for filtered output file...',end = '\r')
-    sns.boxplot(x = 'TP', y = 'Similarity measure', data = in_df, palette = colours_TP)
+    print('--> Saving distribution plot for filtered output file...',end = '\r')
+    sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
     plt.ylabel(Opt_SimilarityMeasure)
     plt.title('{sim} distribution for range ]{min}, {max}] separated by TP'.format(sim = Opt_SimilarityMeasure,  min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
     plt.savefig(Input_Interactions+'.filtered_distribution_1.png', dpi = 300)
@@ -94,4 +92,15 @@ if Output_Plots == True:
 
     TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Input_Interactions+'.filtered_dist_hist.png', bins = [Opt_minSimilarity + (Opt_maxSimilarity - Opt_minSimilarity)/20 * i for i in range(0,21)])
 
-    print('Saving distribution plot for filtered output file... DONE!')
+    print('--> Saving distribution plot for filtered output file... DONE!')
+print('Filtering output by {sim} in range ]{min}, {max}]... DONE!'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
+
+
+print('Adding SMILES for query ligand...', end = '\r')
+smiles_df = pd.read_csv('/Users/cvigilv/Dropbox/Chembl22_goldStd3_max.txt.ul.co',
+                        sep = '\t',
+                        names = ['SMILES', 'Query ligand ChEMBL ID'],
+                        header = None,
+                        index_col = False)
+in_df = pd.merge(in_df, smiles_df, on = 'Query ligand ChEMBL ID', how = 'left')
+print('Adding SMILES for query ligand... DONE!' )
