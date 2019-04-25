@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from configparser import ConfigParser
 import datetime
+from collections import defaultdict
 
 
 # SETTINGS
@@ -100,7 +101,7 @@ print('Filtering output by {sim} in range ]{min}, {max}]... DONE!'.format(sim = 
 
 # Add SMILES from SMILES file to query ligand based on ChEMBL ID
 print('Adding SMILES for query ligand...', end = '\r')
-smiles_df = pd.read_csv('/Users/cvigilv/Dropbox/Chembl22_goldStd3_max.txt.ul.co',
+smiles_df = pd.read_csv('/home/cvigilv/Dropbox/Chembl22_goldStd3_max.txt.ul.co',
                         sep = '\t',
                         names = ['SMILES', 'Query ligand ChEMBL ID'],
                         header = None,
@@ -110,39 +111,43 @@ print('Adding SMILES for query ligand... DONE!' )
 
 # Add information for query ligand and predicted target for next filters
 print('Adding useful information to entries (Pfam of known targets, max clinical phase, number of atoms, etc.)')
+print('--> Loading "broad" selection of ChEMBL into memory...', end = '\r')
 
-broad_dict	= {}
-pfam        = {}
-max_phase   = {}
-natoms      = {}
-lig_pfam    = defaultdict(set)
-targets     = defaultdict(set)
+Lig_info = defaultdict(dict)
+Trg_info = {}
 
-with open('/home/cvigilv/SLiP/Dependencies/chembl22_broad2.txt', 'r') as ints:
+with open(Input_Broad, 'r') as ints:
+    ints.readline()
     for line in ints:
         tokens  = line.rstrip().split('\t')
-        target  = tokens[0]
+        trgid 	= tokens[0]
         ligid   = tokens[1]
         pfam_id = tokens[4]
-        mphase  = tokens[11]
+        mphase  = tokens[-3]
+        natoms 	= tokens[-2]
 
-        natoms[ligid]       = tokens[12]
-        pfam[target]        = pfam_id
-        max_phase[ligid]    = mphase
+        if ligid in Lig_info:
+            Lig_info[ligid]['Known targets for ligand'].add(trgid)
+            Lig_info[ligid]['Known Pfam ID\'s for ligand'].update(pfam_id.strip().split(',')) # Convert concatenated Pfam ID's to python list
 
-        targets[ligid].add(target)
-        lig_pfam[ligid].update(pfam_id.strip().split(','))      # Add PFam IDs of this target to the set of known IDs of this ligand
+        else:
+            Lig_info[ligid]['Known targets for ligand'] = set([trgid])
+            Lig_info[ligid]['Known Pfam ID\'s for ligand'] = set(pfam_id.strip().split(',')) # Convert concatenated Pfam ID's to python list
+            Lig_info[ligid]['Number of heavy atoms'] = natoms
+            Lig_info[ligid]['Max Clinical Phase'] = mphase
 
+        Lig_info[ligid]['Number of known targets'] = len(list(Lig_info[ligid]['Known targets for ligand']))
+        Lig_info[ligid]['Number of known Pfam ID\'s'] = len(list(Lig_info[ligid]['Known Pfam ID\'s for ligand']))
 
-print('\t\t-> Loaded "chembl_broad.txt" to memory')
-
-
-
-# print('Adding information for query ligand...')
-# print('--> Loading broad selection of ChEMBL to memory...', end = '\r')
-# broad_df = pd.read_csv(Input_Broad,
-#                         sep = '\t',
-#                         index_col = False,
-#                         low_memory = False)
-# broad_df = broad_df.rename(columns = {'chembl_id':'Target ChEMBL ID','chembl_id.1':'Ligand ChEMBL ID'})
-# print('--> Loading broad selection of ChEMBL to memory... DONE!')
+Lig_info = pd.DataFrame.from_dict(Lig_info, orient='index')
+Lig_info['Ligand ChEMBL ID'] = Lig_info.index
+Lig_info = Lig_info.reset_index(drop = True)
+Lig_info = Lig_info[['Ligand ChEMBL ID',
+                        'Number of known targets',
+                        'Number of known Pfam ID\'s',
+                        'Known targets for ligand',
+                        'Known Pfam ID\'s for ligand',
+                        'Number of heavy atoms',
+                        'Max Clinical Phase']]
+print('--> Loading "broad" selection of ChEMBL into memory... DONE!')
+print(Lig_info)
