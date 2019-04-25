@@ -109,11 +109,40 @@ in_df = pd.merge(in_df, smiles_df, on = 'Query ligand ChEMBL ID', how = 'left')
 print('Adding SMILES for query ligand... DONE!' )
 
 # Add information for query ligand and predicted target for next filters
-print('Adding information for query ligand...')
-print('--> Loading broad selection of ChEMBL to memory...', end = '\r')
-broad_df = pd.read_csv(Input_Broad,
-                        sep = '\t',
-                        index_col = False,
-                        low_memory = False)
-broad_df = broad_df.rename(columns = {'chembl_id':'Target ChEMBL ID','chembl_id.1':'Ligand ChEMBL ID'})
-print('--> Loading broad selection of ChEMBL to memory... DONE!')
+print('Adding useful information to entries (Pfam of known targets, max clinical phase, number of atoms, etc.)')
+
+broad_dict	= {}
+pfam        = {}
+max_phase   = {}
+natoms      = {}
+lig_pfam    = defaultdict(set)
+targets     = defaultdict(set)
+
+with open('/home/cvigilv/SLiP/Dependencies/chembl22_broad2.txt', 'r') as ints:
+    for line in ints:
+        tokens  = line.rstrip().split('\t')
+        target  = tokens[0]
+        ligid   = tokens[1]
+        pfam_id = tokens[4]
+        mphase  = tokens[11]
+
+        natoms[ligid]       = tokens[12]
+        pfam[target]        = pfam_id
+        max_phase[ligid]    = mphase
+
+        targets[ligid].add(target)
+        lig_pfam[ligid].update(pfam_id.strip().split(','))      # Add PFam IDs of this target to the set of known IDs of this ligand
+
+
+print('\t\t-> Loaded "chembl_broad.txt" to memory')
+
+
+
+# print('Adding information for query ligand...')
+# print('--> Loading broad selection of ChEMBL to memory...', end = '\r')
+# broad_df = pd.read_csv(Input_Broad,
+#                         sep = '\t',
+#                         index_col = False,
+#                         low_memory = False)
+# broad_df = broad_df.rename(columns = {'chembl_id':'Target ChEMBL ID','chembl_id.1':'Ligand ChEMBL ID'})
+# print('--> Loading broad selection of ChEMBL to memory... DONE!')
