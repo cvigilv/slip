@@ -100,14 +100,14 @@ if Output_Plots == True:
 print('Filtering output by {sim} in range ]{min}, {max}]... DONE!'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
 
 # Add SMILES from SMILES file to query ligand based on ChEMBL ID
-print('Adding SMILES for query ligand...', end = '\r')
+print('Adding SMILES of query ligand...', end = '\r')
 smiles_df = pd.read_csv('/home/cvigilv/Dropbox/Chembl22_goldStd3_max.txt.ul.co',
                         sep = '\t',
                         names = ['SMILES', 'Query ligand ChEMBL ID'],
                         header = None,
                         index_col = False)
 in_df = pd.merge(in_df, smiles_df, on = 'Query ligand ChEMBL ID', how = 'left')
-print('Adding SMILES for query ligand... DONE!' )
+print('Adding SMILES of query ligand... DONE!' )
 
 # Add information for query ligand and predicted target for next filters
 print('Adding useful information to entries (Pfam of known targets, max clinical phase, number of atoms, etc.)')
@@ -139,15 +139,21 @@ with open(Input_Broad, 'r') as ints:
         Lig_info[ligid]['Number of known targets'] = len(list(Lig_info[ligid]['Known targets for ligand']))
         Lig_info[ligid]['Number of known Pfam ID\'s'] = len(list(Lig_info[ligid]['Known Pfam ID\'s for ligand']))
 
+        Trg_info[trgid] = pfam_id.strip().split(',')
+
 Lig_info = pd.DataFrame.from_dict(Lig_info, orient='index')
-Lig_info['Ligand ChEMBL ID'] = Lig_info.index
+Lig_info['Query ligand ChEMBL ID'] = Lig_info.index
 Lig_info = Lig_info.reset_index(drop = True)
-Lig_info = Lig_info[['Ligand ChEMBL ID',
-                        'Number of known targets',
-                        'Number of known Pfam ID\'s',
-                        'Known targets for ligand',
-                        'Known Pfam ID\'s for ligand',
-                        'Number of heavy atoms',
-                        'Max Clinical Phase']]
+Lig_info = Lig_info[['Query ligand ChEMBL ID', 'Number of known targets', 'Number of known Pfam ID\'s', 'Known targets for ligand', 'Known Pfam ID\'s for ligand', 'Number of heavy atoms', 'Max Clinical Phase']]
+
+Trg_info = pd.DataFrame.from_dict(Trg_info, orient='index')
+Trg_info['Hit Target ChEMBL ID'] = Trg_info.index
+Trg_info = Trg_info.reset_index(drop = True)
 print('--> Loading "broad" selection of ChEMBL into memory... DONE!')
-print(Lig_info)
+
+print('--> Adding "broad" information of query ligand...', end = '\r')
+in_df = pd.merge(in_df, Lig_info, on = 'Query ligand ChEMBL ID', how = 'left')
+in_df = pd.merge(in_df, Trg_info, on = 'Hit target ChEMBL ID', how = 'left')
+print('--> Adding "broad" information of query ligand... DONE!')
+print()
+print(in_df.info(memory_usage = 'deep'))
