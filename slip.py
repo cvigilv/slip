@@ -53,6 +53,36 @@ def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i f
     plt.savefig(filename, dpi = 300)
     plt.cla()
 
+def df_MySQL(df, column, chembl_version):
+    '''
+    Check if pair ligand-protein is annotated in ChEMBL database, useful for temporal validations and comparison with other species.
+    '''
+    db = pymysql.connect("localhost", "root", "123", Input_ChEMBL)      # Connect to MySQL server containing ChEMBL db
+
+    for index, row in df.iterrows():                                    # Iterate over each entry of the given dataframe
+        ligid = row['Query ligand ChEMBL ID']
+        trgid = row['Hit target ChEMBL ID']
+
+        cursor = db.cursor()                                            # Create cursor for MySQL 
+
+        sql_query = """SELECT * FROM activities act
+                JOIN molecule_dictionary    AS md ON act.molregno    = md.molregno
+                JOIN assays                 AS a  ON a.assay_id      = act.assay_id
+                JOIN target_dictionary      AS td ON a.tid           = td.tid
+                LEFT JOIN target_components AS tc ON td.tid          = tc.tid
+                LEFT JOIN component_domains AS cd ON tc.component_id = cd.component_id
+                LEFT JOIN domains           AS do ON cd.domain_id    = do.domain_id
+                WHERE md.chembl_id = '%s' AND (td.chembl_id = '%s'""" % (ligid, target)
+
+        cursor.execute(sql_query)
+        
+        if cursor.rowcount <= 0:
+            df.loc[index, 'Found in {}'.format(Input_ChEMBL] = False
+        else:
+            df.loc[index, 'Found in {}'.format(Input_ChEMBL] = True
+       
+    db.close()
+
 # MAIN
 print('SchuellerLab Ligand Priorization Pipepline - version {v}'.format(v = __version__))
 print('Start time: {time}'.format(time = datetime.datetime.now()))
