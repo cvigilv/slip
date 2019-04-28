@@ -153,7 +153,14 @@ print('--> Loading "broad" selection of ChEMBL into memory... DONE!')
 
 print('--> Adding "broad" information of query ligand...', end = '\r')
 in_df = pd.merge(in_df, Lig_info, on = 'Query ligand ChEMBL ID', how = 'left')
-in_df = pd.merge(in_df, Trg_info, on = 'Hit target ChEMBL ID', how = 'left')
 print('--> Adding "broad" information of query ligand... DONE!')
-print()
-print(in_df.info(memory_usage = 'deep'))
+
+print('--> Adding "broad" information of hit target...', end = '\r')
+in_df = pd.merge(in_df, Trg_info, on = 'Hit target ChEMBL ID', how = 'left')
+print('--> Adding "broad" information of hit target... DONE!')
+
+print('\nComparing predicitons with ChEMBL database...', end='\r')
+
+
+
+
