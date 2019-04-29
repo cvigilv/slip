@@ -6,12 +6,14 @@ __version__ = 0.0
 # DEPENDENCIES
 import sys
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
-from configparser import ConfigParser
 import datetime
+import pymysql
 from collections import defaultdict
-
+from configparser import ConfigParser
 
 # SETTINGS
 configs = ConfigParser()
@@ -46,6 +48,8 @@ colours_TP = {0: color_neg, 1: color_pos}
 def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i for i in range(0,21)]):
     for i, state in enumerate(states):
         plt.hist(df[df[column] == state][Opt_SimilarityMeasure], density = True, color = colours[i], label = labels[i], alpha = 0.5, bins = bins)
+
+
     plt.xlabel(Opt_SimilarityMeasure)
     plt.ylabel('Relative count (%)')
     plt.legend(title = column)
@@ -53,7 +57,7 @@ def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i f
     plt.savefig(filename, dpi = 300)
     plt.cla()
 
-def df_MySQL(df, column, chembl_version):
+def df_MySQL(df, chembl_version):
     '''
     Check if pair ligand-protein is annotated in ChEMBL database, useful for temporal validations and comparison with other species.
     '''
@@ -72,7 +76,7 @@ def df_MySQL(df, column, chembl_version):
                 LEFT JOIN target_components AS tc ON td.tid          = tc.tid
                 LEFT JOIN component_domains AS cd ON tc.component_id = cd.component_id
                 LEFT JOIN domains           AS do ON cd.domain_id    = do.domain_id
-                WHERE md.chembl_id = '%s' AND (td.chembl_id = '%s'""" % (ligid, target)
+		WHERE md.chembl_id = '%s' AND td.chembl_id = '%s'""" % (ligid, trgid)
 
         cursor.execute(sql_query)
         
@@ -144,7 +148,7 @@ print('Adding useful information to entries (Pfam of known targets, max clinical
 print('--> Loading "broad" selection of ChEMBL into memory...', end = '\r')
 
 Lig_info = defaultdict(dict)
-Trg_info = {}
+Trg_info = defaultdict(dict)
 
 with open(Input_Broad, 'r') as ints:
     ints.readline()
@@ -169,7 +173,7 @@ with open(Input_Broad, 'r') as ints:
         Lig_info[ligid]['Number of known targets'] = len(list(Lig_info[ligid]['Known targets for ligand']))
         Lig_info[ligid]['Number of known Pfam ID\'s'] = len(list(Lig_info[ligid]['Known Pfam ID\'s for ligand']))
 
-        Trg_info[trgid] = pfam_id.strip().split(',')
+        Trg_info[trgid]['Hit target known Pfam ID\'s'] = pfam_id
 
 Lig_info = pd.DataFrame.from_dict(Lig_info, orient='index')
 Lig_info['Query ligand ChEMBL ID'] = Lig_info.index
@@ -177,7 +181,7 @@ Lig_info = Lig_info.reset_index(drop = True)
 Lig_info = Lig_info[['Query ligand ChEMBL ID', 'Number of known targets', 'Number of known Pfam ID\'s', 'Known targets for ligand', 'Known Pfam ID\'s for ligand', 'Number of heavy atoms', 'Max Clinical Phase']]
 
 Trg_info = pd.DataFrame.from_dict(Trg_info, orient='index')
-Trg_info['Hit Target ChEMBL ID'] = Trg_info.index
+Trg_info['Hit target ChEMBL ID'] = Trg_info.index
 Trg_info = Trg_info.reset_index(drop = True)
 print('--> Loading "broad" selection of ChEMBL into memory... DONE!')
 
@@ -190,7 +194,4 @@ in_df = pd.merge(in_df, Trg_info, on = 'Hit target ChEMBL ID', how = 'left')
 print('--> Adding "broad" information of hit target... DONE!')
 
 print('\nComparing predicitons with ChEMBL database...', end='\r')
-
-
-
-
+df_MySQL(in_df, Input_ChEMBL)
