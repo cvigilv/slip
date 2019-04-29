@@ -77,9 +77,9 @@ def df_MySQL(df, column, chembl_version):
         cursor.execute(sql_query)
         
         if cursor.rowcount <= 0:
-            df.loc[index, 'Found in {}'.format(Input_ChEMBL] = False
+            df.loc[index, 'Found in {}'.format(Input_ChEMBL)] = False
         else:
-            df.loc[index, 'Found in {}'.format(Input_ChEMBL] = True
+            df.loc[index, 'Found in {}'.format(Input_ChEMBL)] = True
        
     db.close()
 
