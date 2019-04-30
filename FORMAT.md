@@ -4,9 +4,9 @@ El formato para los 3 archivos necesitados para correr _SLiP_ se encuentra a con
 
 - El nombre asignado para ese archivo en el archivo de configuraciones.
 
-- Una lista enumerada que corresponde a el tipo de informacion que debe contener dicha columna en el archivo.
+- Una lista enumerada que corresponde al tipo de informacion que debe contener dicha columna en el archivo ("1." corresponde a la primera columna, "2." corresponde a la segunda columna, etc.)
 
-Se debe tomar en cuenta que el separador de estos archivos debe ser *tab* ('\t'), de lo contrario arrojará error.
+Se debe tomar en cuenta que el separador de estos archivos debe ser *tab* ('''\t'''), de lo contrario arrojará error.
 
 #### _"Interactions file"_ o salida de _pipeline_ para predicir interacciones proteína-ligando.
 
