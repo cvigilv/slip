@@ -1,0 +1,100 @@
+#svl
+
+// To run, in MOE/SVL:
+// run ['slip.svl','Chembl22_goldStd3_max.complete.txt.co.norm.LR.out.FXa.1000.CHEMBL244.smiles.pfam+mphase+natoms.MySQL.instock.top500','PrepareLigands']
+
+function db_ImportASCII, flist, db_Open, WashMDB, pot_Load, db_Minimize, db_ExportSD;
+
+global function PrepareLigands input_file
+
+    // Change current forcefield to MMFF94x.
+    print "Loading MMFF94x forcefield...";
+    _pot_Load '$MOE/lib/mmff94x.ff';
+
+    // Extract name of out file and create .mdb file.
+    print "Creating Molecular Database (*.mdb) file for ligand preparation...";
+    local db;
+    input_file = string input_file;
+    db = cat [input_file,".mdb"];
+    db = token db;
+    db_Open [ db, 'create' ];
+    
+
+    //  Import database information to .mdb file.
+    //+ Changes names of fields to corresponding ASCII header names
+    print "Importing filtered ASCII database to previously created Molecular Database (*.mdb) file...";
+
+    input_file = token input_file;
+
+    db_ImportASCII [
+        ascii_file  : input_file,
+        db_file     : db,
+        delimiter   : '\t',
+        quotes      : 0,
+        names       : ['SMILES','Fold','Query Ligand','Predicted Target','Tc','Lig.','Hit Target','TP','Hit Ligand Targets','Known Pfam','Predicted Pfam','Max Clinical Phase','N atoms','MolPort InStock'],
+        types       : ['molecule','int','char','char','float','char','char','int','char','char','char','int','int','char'],
+        skip        : [0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        titles      : 0,
+        do_emin     : 0,
+        append      : 0
+    ];
+
+    //  Wash molecules in field "SMILES"
+    //+ Conditions : "Dominant ph == 7.0".
+    //+ Adds hydrogens to molecule.
+    print "Washing molecules & adding hydrogens...";
+
+    WashMDB [db, 'SMILES', '', [
+	esel        : 0, 
+	opendbv     : 1, 
+	destfield   : 'SMILES', 
+	namefrom    : 'field', 
+	namefield   : 'Query Ligand', 
+	onecomp     : 1, 
+	salts       : 1, 
+	fragsave    : 0, 
+	fragfield   : 'salt', 
+	neutralize  : 0, 
+	hydrogens   : 'add', 
+	protomers   : 1, 
+	dominantProt: 1, 
+	pH          : 7, 
+	original    : 0, 
+	enumsize    : 1, 
+	enumdup     : 0, 
+	seqfld      : 'pseq', 
+	depict      : 0, 
+	scale       : 0, 
+	verbose     : 1
+	]
+    ];
+
+    //  Minimize molecules using specified forcefield and options.
+    //+ Minimized molecules replace 2D representation of molecule in "SMILES" field.
+    print "Minimizing molecules...";
+
+    db_Minimize [ db, 'SMILES', [
+        gtest           : 0.00001,
+        rebuild         : 'Minimize',
+        keep_chirality  : 1,
+        add_h           : 0,
+        pot_charge      : 1]
+    ];
+
+    //  Save .mdb file to .sdf file
+    print "Saving Molecular Database to .sdf file...";
+    local out_file, sdf_out;
+    out_file = string input_file;
+    sdf_out  = cat [out_file,".sdf"];
+    sdf_out  = token sdf_out;
+
+    print sdf_out;
+
+    db_ExportSD [db, sdf_out, [], [], [
+	del_hlp : 0,
+        depict2D: 0]
+    ];
+
+
+    dbv_Open [ db ];
+endfunction
