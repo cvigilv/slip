@@ -20,12 +20,23 @@ Se debe tomar en cuenta que el separador de estos archivos debe ser *tab* ('\t')
 
 #### _"Broad file"_ o selección amplia de la base de datos ChEMBL.
 
+***Nota:*** Para la versión 1.0 aún se ocupa una seleccion amplia o _"broad"_ basada en _MySQL queries_ de _GoldStandard 3_, por lo que hay ciertas columnas que son ignoradas, pero **DEBEN EXISTIR** para que corra de manera adecuada el programa. Esto es un _issue_ que se tiene en cuenta para la próxima versión del programa.yy
+
+***Nota 2:*** Existen _MySQL queries_ listas para este archivo, los cuales se pueden encontrar en [github.com/cvigilv/chembl-sql](https://github.com/cvigilv/chembl-sql)
+
 1. Identificador ChEMBL para el blanco.
 2. Identificador ChEMBL para el ligando.
+3. _Ignorada_
+4. _Ignorada_
 5. Identificador(es) Pfam para el blanco.
--3. Fase clínica máxima para el ligando.
--2. Número de átomos pesados del ligando.
-
+6. _Ignorada_
+7. _Ignorada_
+8. _Ignorada_
+9. _Ignorada_
+10. _Ignorada_
+11. _Ignorada_
+12. Fase clínica máxima para el ligando.
+13. Número de átomos pesados del ligando.
 
 #### _"SMILES file"_ o archivo relacional "SMILES canonicos - ChEMBL ID ligandos".
 
