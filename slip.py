@@ -22,7 +22,7 @@ configs.read(sys.argv[1])
 
 Input_Interactions = configs.get('Input', 'Interactions file')
 Input_Broad        = configs.get('Input', 'Broad file')
-Input_ChEMBL       = configs.get('Input', 'ChEMBL version')
+Input_ChEMBL       = configs.get('Options', 'ChEMBL version')
 
 Opt_JustTarget       = configs.get('Options', 'Keep target')
 Opt_JustLigand       = configs.get('Options', 'Keep ligand')
@@ -37,6 +37,7 @@ Opt_maxClinicalPhase = configs.getint('Options', 'max(Clinical Phase)')
 Output_Directory = configs.get('Output', 'Output directory')
 Output_File      = configs.get('Output', 'Output file')
 Output_Plots     = configs.getboolean('Output', 'Generate plots')
+Output_Prepare   = configs.getboolean('Output', 'Prepare file')
 
 if Opt_SimilarityMeasure == '': Opt_SimilarityMeasure = 'Similarity measure'
 
