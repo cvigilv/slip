@@ -2,7 +2,7 @@
 
 ## ¿Qué es SLiP?
 
-SLiP o _"Schüllerlab Ligand Priorization pipeline"_ corresponde a una herramienta escrita en Python que tiene por finalidad filtrar y priorizar el archivo de salida proveniente de las predicciones proteina-ligando. El archivo filtrado pasa por una serie de filtros que tienen como finalidad seleccionar los casos interesantes para analisis posteriores, como lo serían simulaciones de _docking_ molecular o visualización de predicciones interesantes.
+SLiP o _"Schüllerlab Ligand Priorization pipeline"_ corresponde a una herramienta escrita en Python que tiene por finalidad filtrar y priorizar el archivo de salida proveniente de las predicciones proteina-ligando, la cual puede emplearse en análisis posteriores, como lo serían simulaciones de _docking_ molecular o visualización de predicciones interesantes.
 
 ## Dependencias
 
@@ -20,7 +20,7 @@ Además SliP necesita:
 
 - Python version >= 3.0.
 
-- panda
+- pandas
 
 - matplotlib
 
@@ -32,13 +32,5 @@ Además SliP necesita:
 
 En la linea de comando, se puede correr SLiP de la siguiente manera:
 
-        $ python3 slip.py slip.config -kwargs
-
-Donde los _-kwargs_ pueden ser:
-
-- Aqui van los kwargs a implementar
-
-## Ejemplos de configuración
-
-## Otros
+        $ python3 slip.py slip.config
 
