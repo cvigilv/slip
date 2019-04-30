@@ -14,7 +14,7 @@ SLiP necesita de los siguientes archivos para poder correr:
 
 - Archivo con SMILES para los ligandos del archivo de salida.
 
-Para conocer el formato de estos archivos, referir al archivo FORMATS.md dentro del repositorio.
+Para conocer el formato de estos archivos, referir al archivo [FORMATS.md](FORMATS.md) dentro del repositorio.
 
 Además SliP necesita:
 
