@@ -43,7 +43,7 @@ En la linea de comando, se puede correr SLiP de la siguiente manera:
 
         $ python3 slip.py slip.config
 
-## Configuraciones
+## Opciones
 
 _SLiP_ cuenta con un [archivo de configuraciones](slip.ini) que le permite modificar ciertas configuraciones estándar con las que corre el programa.
 
@@ -89,7 +89,7 @@ Limite superior no inclusivo utilizado para filtrar por la fase clínica del lig
 
 ### Sección _[Output]_
 
-#### _Output directory_
+#### * _Output directory_
 Directorio donde se almacenarán todos los archivos de salida de SLiP. De dejarse vacío, se creará una carpeta con el nombre del archivo de interacciones con la terminación \*-slip.
 
 #### _Output file_
