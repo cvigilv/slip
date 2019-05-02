@@ -1,31 +1,11 @@
 # Schüllerlab LIgand Priorization pipeline ("SLiP") - versión 1.0
 
-Tabla de contenido
+__Tabla de contenidos__
 -----
 * [¿Qué es SLiP?](#qué-es-slip)
 * [Dependencias](#dependencias)
 * [¿Cómo utilizarlo?](#cómo-utilizarlo)
 * [Configuraciones](#configuraciones)
-	* [Sección <em>[Input]</em>](#sección-input)
-		* [<em>Interactions file:</em>](#interactions-file)
-		* [<em>Broad file</em>:](#broad-file)
-  		* [<em>ChEMBL version</em>:](#chembl-version)
- 	* [Sección <em>[Options]</em>](#sección-options)
-  		* [<em>Keep target</em>:](#keep-target)
-  		* [<em>Keep ligand</em>:](#keep-ligand)
-  		* [<em>Pfam cutoff</em>:](#pfam-cutoff)
-  		* [<em>Top X entries</em>:](#top-x-entries)
-  		* [<em>Similarity measure used</em>:](#similarity-measure-used)
-  		* [<em>min(Similarity)</em>:](#minsimilarity)
-  		* [<em>max(Similarity)</em>:](#maxsimilarity)
-  		* [<em>min(Clinical Phase)</em>:](#minclinical-phase)
-  		* [<em>max(Clinical Phase)</em>:](#maxclinical-phase)
- 	* [Sección <em>[Output]</em>](#sección-output)
-	 	* [<em>Output directory</em>:](#output-directory)
-  		* [<em>Output file</em>:](#output-file)
-  		* [<em>Generate plots</em>:](#generate-plots)
-  		* [<em>Prepare file</em>:](#prepare-file)
-
 
 ## ¿Qué es SLiP?
 
