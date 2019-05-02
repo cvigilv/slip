@@ -1,12 +1,15 @@
 # Formato archivos requeridos
 
-El formato para los 3 archivos necesitados para correr _SLiP_ se encuentra a continuación. Cada entrada se organiza de la siguiente manera:
+El formato para los 3 de los 4 archivos necesitados para correr _SLiP_ se encuentra a continuación. Cada entrada se organiza de la siguiente manera:
 
 - El nombre asignado para ese archivo en el archivo de configuraciones.
 
-- Una lista enumerada que corresponde al tipo de informacion que debe contener dicha columna en el archivo ("1." corresponde a la primera columna, "2." corresponde a la segunda columna, etc.)
+- Una lista enumerada que corresponde al tipo de informacion que debe contener dicha columna en el archivo ("1." corresponde a la primera columna, "2." corresponde a la segunda columna, etc.). 
 
-Se debe tomar en cuenta que el separador de estos archivos debe ser *tab* ('''\t'''), de lo contrario arrojará error.
+El separador de estos archivos debe ser *tab* (`\t`), de lo contrario arrojará error.
+
+***Nota***: Para el caso del [archivo de configuraciones](slip.ini), referirce al instructivo en el archivo [README.md](README.md).
+
 
 #### _"Interactions file"_ o salida de _pipeline_ para predicir interacciones proteína-ligando.
 
