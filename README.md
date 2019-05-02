@@ -49,63 +49,53 @@ _SLiP_ cuenta con un [archivo de configuraciones](slip.ini) que le permite modif
 
 ### Sección _[Input]_
 
-#### _Interactions file:_ 
-Corresponde al archivo de salida del pipeline de predicciones proteína-ligando. El formato permitido debe ser el siguiente:
+#### _Interactions file_
+Archivo de salida del _pipeline_ de predicciones proteína-ligando, referirse a [FORMAT.md](FORMAT.md) para más información.
 
-| Número columna | Contenido columna | Python type() | Comentario |
-|:--------------:|:------------------|:-------------:|:-----------|
-| 1 | _Fold_| int | |
-| 2 | _Query Ligand ChEMBL ID_ | str | |
-| 3 | _Hit Target ChEMBL ID_ | str | |
-| 4 | _Similarity measure_ | float | Debe estar en un rango de 0.0 a 1.0 (normalizado) |
-| 5 | _Query Target ID_ | str | Columna ignorada |
-| 6 | _Hit Ligand ID_  | str | **Debe ser ChEMBL ID** |
-| 7 | _TP_ | int | Debe ser 0 o 1 |
-
-#### _Broad file_: 
+#### _Broad file_
 Archivo de interacciones proteína-ligando amplia, referirse a [FORMAT.md](FORMAT.md) para más información.
 
-#### _ChEMBL version_: 
-Versión de ChEMBL utilizada para la validación temporal y contra otras especies para eliminar casos que se han probado en otras especies o que se encuentran en versiones de ChEMBL más acutalizadas.
+#### _ChEMBL version_
+Versión de ChEMBL utilizada para la validación temporal y contra otras especies, para filtrar casos que se han probado en otras especies (vía modelos de estudio, por ejemplo) o que se encuentran en versiones de ChEMBL más acutalizadas.
 
 ### Sección _[Options]_
 
-#### _Keep target_:
-Esta opción permite generar un archivo de salida que solo contanga predicciones para un blanco especificado. Esta entrada debe ser un ChEMBL ID para el blanco que se desea analizar.
+#### _Keep target_
+Esta opción permite generar un archivo de salida que solo contanga predicciones para el blanco especificado. Esta entrada debe ser un ChEMBL ID para el blanco que se desea analizar.
 
-#### _Keep ligand_: 
-Esta opción permite generar un archivo de salida que solo contenga predicciones para un ligando especifico. Esta entrada debe ser un ChEMBL ID para el ligando que se desea analizar.
+#### _Keep ligand_ 
+Esta opción permite generar un archivo de salida que solo contenga predicciones para el ligando especificado. Esta entrada debe ser un ChEMBL ID para el ligando que se desea analizar.
 
-#### _Pfam cutoff_: 
+#### _Pfam cutoff_ 
 Número de Pfam ID's que pueden compartir el ligando consultado y el blanco predicho. De ser igual o mayor a este valor, se eliminará la entrada.
 
-#### _Top X entries_: 
-Dejar el top X de entradas según el valor del _similarity measure_.
+#### _Top X entries_
+Dejar las top _N_ entradas basandose en el valor del _similarity measure_.
 
-#### _Similarity measure used_: 
+#### _Similarity measure used_
 Medida de similitud o de puntuación de la predicción. Se utiliza para generar gráficos y tablas acorde a esta medida.
 
-#### _min(Similarity)_: 
+#### _min(Similarity)_
 Limite inferior inclusivo utilizado para filtrar por similitud. Debe ser un valor entre 0 y 1.
 
-#### _max(Similarity)_: 
+#### _max(Similarity)_ 
 Limite superior no inclusivo utilizado para filtrar por similitud. Debe ser un valor entre 0 y 1.
 
-#### _min(Clinical Phase)_: 
+#### _min(Clinical Phase)_
 Limite inferior inclusivo utilizado para filtrar por fase clínica del ligando. Debe ser un valor entre 0 y 4.
 
-#### _max(Clinical Phase)_: 
+#### _max(Clinical Phase)_
 Limite superior no inclusivo utilizado para filtrar por la fase clínica del ligando. Debe ser un valor entre 0 y 4.
 
 ### Sección _[Output]_
 
-#### _Output directory_: 
-Directorio donde se almacenaran todos los archivos de salida de SLiP. De dejarse vacío, se creará una carpeta con el nombre del archivo de interacciones con la terminación \*-slip.
+#### _Output directory_
+Directorio donde se almacenarán todos los archivos de salida de SLiP. De dejarse vacío, se creará una carpeta con el nombre del archivo de interacciones con la terminación \*-slip.
 
-#### _Output file_: 
+#### _Output file_
 Nombre del archivo de salida filtrado. De dejarse vacío, se colocará la terminación \*-slip al archivo.
 
-#### _Generate plots_: 
+#### _Generate plots_ 
 Genera gráficos de distribuciones a partir de cada paso de filtrado. Debe ser "True" o "False".
 
 #### _Prepare file_: 
