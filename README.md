@@ -1,11 +1,11 @@
-# Schüllerlab LIgand Priorization pipeline ("SLiP") - versión 1.0
+# Schüllerlab LIgand Priorization pipeline ("SLiP") - v1.0
 
 __Tabla de contenidos__
 -----
 * [¿Qué es SLiP?](#qué-es-slip)
 * [Dependencias](#dependencias)
 * [¿Cómo utilizarlo?](#cómo-utilizarlo)
-* [Configuraciones](#configuraciones)
+* [Opciones](#opciones)
 
 ## ¿Qué es SLiP?
 
@@ -89,7 +89,7 @@ Limite superior no inclusivo utilizado para filtrar por la fase clínica del lig
 
 ### Sección _[Output]_
 
-#### * _Output directory_
+#### _Output directory_
 Directorio donde se almacenarán todos los archivos de salida de SLiP. De dejarse vacío, se creará una carpeta con el nombre del archivo de interacciones con la terminación \*-slip.
 
 #### _Output file_
