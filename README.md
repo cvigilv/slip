@@ -45,9 +45,9 @@ En la linea de comando, se puede correr SLiP de la siguiente manera:
 
 ## Opciones
 
-_SLiP_ cuenta con un [archivo de configuraciones](slip.ini) que le permite modificar el comportamiento habitual del programa, permitiendo acotar la herramienta a un objetivo más específico. Cuenta con 3 secciones divididas según donde en que parte del proceso toman acción.
+_SLiP_ cuenta con un [archivo de configuraciones](slip.ini) que le permite modificar el comportamiento habitual del programa, permitiendo acotar la herramienta a un objetivo más específico. Cuenta con 3 secciones divididas según que parte del proceso se ve afectado.
 
----
+------
 
 ### Sección _[Input]_
 
@@ -57,7 +57,7 @@ Archivo de salida del _pipeline_ de predicciones proteína-ligando, referirse a 
 #### _Broad file_
 Archivo de interacciones proteína-ligando amplia, referirse a [FORMAT.md](FORMAT.md) para más información.
 
----
+------
 
 ### Sección _[Options]_
 
@@ -91,7 +91,7 @@ Limite inferior inclusivo utilizado para filtrar por fase clínica del ligando. 
 #### _max(Clinical Phase)_
 Limite superior no inclusivo utilizado para filtrar por la fase clínica del ligando. Debe ser un valor entre 0 y 4.
 
----
+------
 
 ### Sección _[Output]_
 
