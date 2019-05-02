@@ -42,7 +42,7 @@ _SLiP_ cuenta con un [archivo de configuraciones](slip.ini) que le permite modif
 
 ### Sección _[Input]_
 
-##### _Interactions file:_ 
+#### _Interactions file:_ 
 Corresponde al archivo de salida del pipeline de predicciones proteína-ligando. El formato permitido debe ser el siguiente:
 
 | Número columna | Contenido columna | Python type() | Comentario |
@@ -55,51 +55,51 @@ Corresponde al archivo de salida del pipeline de predicciones proteína-ligando.
 | 6 | _Hit Ligand ID_  | str | **Debe ser ChEMBL ID** |
 | 7 | _TP_ | int | Debe ser 0 o 1 |
 
-##### _Broad file_: 
+#### _Broad file_: 
 Archivo de interacciones proteína-ligando amplia, referirse a [FORMAT.md](FORMAT.md) para más información.
 
-##### _ChEMBL version_: 
+#### _ChEMBL version_: 
 Versión de ChEMBL utilizada para la validación temporal y contra otras especies para eliminar casos que se han probado en otras especies o que se encuentran en versiones de ChEMBL más acutalizadas.
 
-### Sección _[Options]
+### Sección _[Options]_
 
-##### _Keep target_:
+#### _Keep target_:
 Esta opción permite generar un archivo de salida que solo contanga predicciones para un blanco especificado. Esta entrada debe ser un ChEMBL ID para el blanco que se desea analizar.
 
-##### _Keep ligand_: 
+#### _Keep ligand_: 
 Esta opción permite generar un archivo de salida que solo contenga predicciones para un ligando especifico. Esta entrada debe ser un ChEMBL ID para el ligando que se desea analizar.
 
-##### _Pfam cutoff_: 
+#### _Pfam cutoff_: 
 Número de Pfam ID's que pueden compartir el ligando consultado y el blanco predicho. De ser igual o mayor a este valor, se eliminará la entrada.
 
-##### _Top X entries_: 
+#### _Top X entries_: 
 Dejar el top X de entradas según el valor del _similarity measure_.
 
-##### _Similarity measure used_: 
+#### _Similarity measure used_: 
 Medida de similitud o de puntuación de la predicción. Se utiliza para generar gráficos y tablas acorde a esta medida.
 
-##### _min(Similarity)_: 
+#### _min(Similarity)_: 
 Limite inferior inclusivo utilizado para filtrar por similitud. Debe ser un valor entre 0 y 1.
 
-##### _max(Similarity)_: 
+#### _max(Similarity)_: 
 Limite superior no inclusivo utilizado para filtrar por similitud. Debe ser un valor entre 0 y 1.
 
-##### _min(Clinical Phase)_: 
+#### _min(Clinical Phase)_: 
 Limite inferior inclusivo utilizado para filtrar por fase clínica del ligando. Debe ser un valor entre 0 y 4.
 
-##### _max(Clinical Phase)_: 
+#### _max(Clinical Phase)_: 
 Limite superior no inclusivo utilizado para filtrar por la fase clínica del ligando. Debe ser un valor entre 0 y 4.
 
 ### Sección _[Output]_
 
-##### _Output directory_: 
+#### _Output directory_: 
 Directorio donde se almacenaran todos los archivos de salida de SLiP. De dejarse vacío, se creará una carpeta con el nombre del archivo de interacciones con la terminación \*-slip.
 
-##### _Output file_: 
+#### _Output file_: 
 Nombre del archivo de salida filtrado. De dejarse vacío, se colocará la terminación \*-slip al archivo.
 
-##### _Generate plots_: 
+#### _Generate plots_: 
 Genera gráficos de distribuciones a partir de cada paso de filtrado. Debe ser "True" o "False".
 
-##### _Prepare file_: 
+#### _Prepare file_: 
 Preparar el archivo de salida utilizando MOE y el script [slip\_prepare.svl](slip\_prepare.svl). Debe ser "True" o "False".
