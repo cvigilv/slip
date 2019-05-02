@@ -45,7 +45,9 @@ En la linea de comando, se puede correr SLiP de la siguiente manera:
 
 ## Opciones
 
-_SLiP_ cuenta con un [archivo de configuraciones](slip.ini) que le permite modificar ciertas configuraciones estándar con las que corre el programa.
+_SLiP_ cuenta con un [archivo de configuraciones](slip.ini) que le permite modificar el comportamiento habitual del programa, permitiendo acotar la herramienta a un objetivo más específico. Cuenta con 3 secciones divididas según donde en que parte del proceso toman acción.
+
+---
 
 ### Sección _[Input]_
 
@@ -55,10 +57,12 @@ Archivo de salida del _pipeline_ de predicciones proteína-ligando, referirse a 
 #### _Broad file_
 Archivo de interacciones proteína-ligando amplia, referirse a [FORMAT.md](FORMAT.md) para más información.
 
-#### _ChEMBL version_
-Versión de ChEMBL utilizada para la validación temporal y contra otras especies, para filtrar casos que se han probado en otras especies (vía modelos de estudio, por ejemplo) o que se encuentran en versiones de ChEMBL más acutalizadas.
+---
 
 ### Sección _[Options]_
+
+#### _ChEMBL version_
+Versión de ChEMBL utilizada para la validación temporal y contra otras especies, para filtrar casos que se han probado en otras especies (vía modelos de estudio, por ejemplo) o que se encuentran en versiones de ChEMBL más acutalizadas.
 
 #### _Keep target_
 Esta opción permite generar un archivo de salida que solo contanga predicciones para el blanco especificado. Esta entrada debe ser un ChEMBL ID para el blanco que se desea analizar.
@@ -86,6 +90,8 @@ Limite inferior inclusivo utilizado para filtrar por fase clínica del ligando. 
 
 #### _max(Clinical Phase)_
 Limite superior no inclusivo utilizado para filtrar por la fase clínica del ligando. Debe ser un valor entre 0 y 4.
+
+---
 
 ### Sección _[Output]_
 
