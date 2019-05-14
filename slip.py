@@ -6,7 +6,7 @@ __version__ = 0.0
 # DEPENDENCIES
 import sys
 import os
-import pandas as pd 
+import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -175,7 +175,7 @@ print('Filtering output by Max clinical phase in range ]{min}, {max}]...'.format
 in_df = in_df[(in_df['Max Clinical Phase'] <= Opt_maxClinicalPhase) & (in_df['Max Clinical Phase'] > Opt_minClinicalPhase)]
 print('Filtering output by Max clinical phase in range ]{min}, {max}]... DONE!'.format(min = str(Opt_minClinicalPhase), max = str(Opt_maxClinicalPhase)))
 
-# Run MySQL query to temporally validate predicted protein-ligand interaction.
+# Run MySQL query for temporal validation of predicted protein-ligand interaction.
 print('Comparing predictions with ChEMBL database...', end='\r')
 db = pymysql.connect("localhost", "root", "123", Input_ChEMBL)         # Connect to MySQL server containing ChEMBL db
 
@@ -205,9 +205,22 @@ db.close()
 print('Comparing predictions with ChEMBL database... DONE!')
 
 # Compare Pfam ID's of query ligand and hit target (predicted ligand-protein pair).
-print('Comparing Pfam ID\'s of query ligand and hit target...', end='\r')
+print('Comparing Pfam ID\'s of query ligand and hit target...')
+print('--> Finding common Pfam ID\'s for query ligand - hit target pair...', end='\r')
 in_df['Common Pfam ID\'s'] = in_df.apply(lambda row: [x for x in list(row['Query ligand known Pfam ID\'s']) if x in list(row['Hit target known Pfam ID\'s'])], axis=1) # List common Pfam ID's between query ligand and hit target (predicted ligand-protein pair).
+print('--> Finding common Pfam ID\'s for query ligand - hit target pair... done!')
+
+print('--> Counting common Pfam ID\'s for query ligand - hit target pair...', end='\r')
 in_df['Number of common Pfam ID\'s'] = in_df.apply(lambda row: len(row['Common Pfam ID\'s']), axis=1) # Count common Pfam ID's for further filtering down the line.
+print('--> Counting common Pfam ID\'s for query ligand - hit target pair... done!')
+
+print('--> Filtering based in number of common Pfam ID\'s...', end='\r')
+in_df = in_df[in_df['Number of common Pfam ID\'s'] <= Opt_PfamCutoff]
+print('--> Filtering based in number of common Pfam ID\'s... done!')
 print('Comparing Pfam ID\'s of query ligand and hit target... DONE!')
 
-# 
+# Select the top X predictions
+print('Keeping top {x} protein-ligand interaction predictions...', end='\r')
+in_df = in_df.head(Opt_TopX)
+
+print('Keeping top {x} protein-ligand interaction predictions... DONE!')
