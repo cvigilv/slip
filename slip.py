@@ -220,7 +220,10 @@ print('--> Filtering based in number of common Pfam ID\'s... done!')
 print('Comparing Pfam ID\'s of query ligand and hit target... DONE!')
 
 # Select the top X predictions
-print('Keeping top {x} protein-ligand interaction predictions...', end='\r')
+print('Keeping top {x} protein-ligand interaction predictions...'.format(x = Opt_TopX), end='\r')
 in_df = in_df.head(Opt_TopX)
+print('Keeping top {x} protein-ligand interaction predictions... DONE!'.format(x = Opt_TopX))
 
-print('Keeping top {x} protein-ligand interaction predictions... DONE!')
+print()
+
+print(in_df)
