@@ -10,6 +10,6 @@
 
 - [x] _Max Phase cutoff_: Filter out all entries with max\_clinical\_phase outside given range. Range is inclusive for upper limit and non-inclusive for lower limit.
 
-- [ ] _TopX selection_: Keep top _n_ selections of filtered output file. Use pandas _df.head(N)_ for this.
+- [x] _TopX selection_: Keep top _n_ selections of filtered output file. Use pandas _df.head(N)_ for this.
 
 - [ ] _Add Molport ID for in-stock compounds_: Add identificator for easier search in Molport store.
