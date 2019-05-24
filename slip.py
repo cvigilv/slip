@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 '''
 SLIP - SchuellerLab LIgand Pipeline
 version 0.2
@@ -23,541 +24,272 @@ Dependencies:
     -   MOE 2018
 '''
 #test
+=======
+>>>>>>> pandas
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 
+__version__ = 0.0
 
-# LIBRARY
+# DEPENDENCIES
 import sys
-import datetime
 import os
+import datetime
 import pymysql
-import prettytable
-import subprocess
-from collections    import defaultdict
-from operator       import itemgetter
-from configparser   import ConfigParser
 
-# CONFIG LOADING
-config = ConfigParser()
+import matplotlib
+matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
+from collections import defaultdict
+from configparser import ConfigParser
+
+
+# SETTINGS
+configs = ConfigParser()
+configs.read(sys.argv[1])
+
+Input_Interactions = os.path.abspath(configs.get('Input', 'Interactions file'))
+Input_Broad        = os.path.abspath(configs.get('Input', 'Broad file'))
+Input_ChEMBL       = configs.get('Options', 'ChEMBL version')
+
+Opt_JustTarget       = configs.get('Options', 'Keep target')
+Opt_JustLigand       = configs.get('Options', 'Keep ligand')
+Opt_PfamCutoff       = configs.getint('Options', 'Pfam cutoff')
+Opt_SimilarityMeasure= configs.get('Options', 'Similarity measure used')
+Opt_TopX             = configs.getint('Options', 'Top X entries')
+Opt_minSimilarity    = configs.getfloat('Options', 'min(Similarity)')
+Opt_maxSimilarity    = configs.getfloat('Options', 'max(Similarity)')
+Opt_minClinicalPhase = configs.getint('Options', 'min(Clinical Phase)')
+Opt_maxClinicalPhase = configs.getint('Options', 'max(Clinical Phase)')
+
+Output_Directory = configs.get('Output', 'Output directory')
+Output_File      = configs.get('Output', 'Output file')
+Output_Plots     = configs.getboolean('Output', 'Generate plots')
+Output_Prepare   = configs.getboolean('Output', 'Prepare file')
+
+Default_filename = Input_Interactions.split('/')[-1]
+
+# Default settings behaviour
+if Opt_SimilarityMeasure == '':
+    Opt_SimilarityMeasure = 'Similarity measure'
+if Output_Directory == '':
+    Output_Directory = Input_Interactions+('-'+datetime.datetime.now().strftime("%Y.%m.%d_%H:%M:%S")).rstrip()
+if Output_File == '':
+    Output_File = Default_filename+'.slip'
+
+color_neg = '#527AB2'
+color_pos = '#FF4528'
+colours_TP = {0: color_neg, 1: color_pos}
+
+
+# FUNCTIONS
+def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i for i in range(0,21)]):
+    for i, state in enumerate(states):
+        plt.hist(df[df[column] == state][Opt_SimilarityMeasure], density = True, color = colours[i], label = labels[i], alpha = 0.5, bins = bins)
+
+    plt.xlabel(Opt_SimilarityMeasure)
+    plt.ylabel('Relative count (%)')
+    plt.legend(title = column)
+    plt.title('{sim} distribution separated by {column}'.format(sim = Opt_SimilarityMeasure, column = column))
+    plt.savefig(filename, dpi = 300)
+    plt.cla()
 
-config.read(sys.argv[2])
-
-Keep_Predicted_Target   = config.get('options','Keep_Predicted_Target')
-commonPfam_cutoff       = config.getint('options','commonPfam_cutoff')
-TopX_cutoff             = config.getint('options','TopX_cutoff')
-Tc_min                  = config.getfloat('options','Tc_min')
-Tc_max                  = config.getfloat('options','Tc_max')
-mphase_min              = config.getint('options','mphase_min')
-mphase_max              = config.getint('options','mphase_max')
-ALTsmiles		        = config.get('options','alt_smiles_path')
-ALTbroad				= config.get('options','alt_broad_path')
-
-
-# VARIABLES
-list_fileName   = []
-list_lineCount  = []
-list_filterID   = []
-
-#   FUNCTIONS
-#+  OTHER FUNCTIONS
-def progressPercentage(currentEntry):
-    '''
-    Calculate the percentage of progress from an specified step
-    '''
-    global list_lineCount
-
-    total   = int(list_lineCount[-1])
-    Percent = round( ((currentEntry/total)*100), 1)
-
-    return str(Percent)+' / 100%'
-
-def initializeSLIP():
-    '''
-    Initialize SLiP Pipeline:
-    i.   Creates directory for output files
-    ii.  Prints out file to process, output folder name, amount of entries in input file and SLiP configuration.
-    '''
-
-    global cvout_file, config_file, fileName, list_fileName, list_lineCount, Keep_Predicted_Target
-
-    fileName         = cvout_file.split('/')[-1]; list_fileName.append(fileName)
-    folderExtension  = ('-'+datetime.datetime.now().strftime("%Y.%m.%d_%H:%M:%S")).rstrip()
-    folderName       = fileName+folderExtension
-    configString     = 'Pfam cutoff == {} - Top {} - Tc == [{},{}[ - MaxPhase == [{},{}['.format(commonPfam_cutoff, TopX_cutoff,Tc_min,Tc_max,mphase_min,mphase_max)
-    if Keep_Predicted_Target != '': 'Keep only entries with "{}" as Predicted Target - {}'.format(Keep_Predicted_Target,configString)
-
-    print(">> Input information <<\n")
-    print("input_file   ->\t\t{}".format(os.path.abspath(cvout_file)))
-    print("out_folder   ->\t\t{}".format(os.path.abspath(folderName)))
-
-    os.system('mkdir {1}; mv {0} {1}/; mv {2} {1}/'.format(cvout_file, folderName, config_file))
-    os.chdir('{}/'.format(folderName))
-
-    lines_cvout = os.popen('wc -l {}'.format(cvout_file)).read().split(' ')[0]
-    list_lineCount.append(lines_cvout)
-
-    print("input_lines  ->\t\t{:,}".format(int(lines_cvout)))
-    print("\nconfig_file  ->\t\t{}".format(os.path.abspath(config_file)))
-    print("configs      ->\t\t{}".format(configString))
-
-    print("\nChanging work directory to {}".format(os.getcwd()))
-
-#+  PIPELINE FUNCTIONS
-def Clean_Input(cvout_file):
-    '''
-    Cleans input file to eliminate posible errors:
-    i.   Ignore cases with Tc == -99 (False Negatives)
-    ii.  Ignore cases with TP == 1.0 (True Positives)
-    '''
-
-    global fileName, list_fileName, list_lineCount
-
-    print("\n i.\tCleaning input file")
-
-    fileName            = fileName+'.clean'; list_fileName.append(fileName)
-    outFile             = open(fileName,'a+')
-    entryN              = 0
-    dismissedEntries    = 0
-
-    with open(cvout_file,'r') as file:
-        for line in file:
-            tokens = line.rstrip().split('\t')
-
-            Tc = float(tokens[3])
-            TP = float(tokens[6])
-
-            entryN += 1
-            print ("\t\t-> {}".format(progressPercentage(entryN)), end='\r')
-
-            # Check "Tc" & "TP", if not problematic then write line to output file
-            if Tc != -99:
-                if TP == 0.0:
-                    outFile.write(line)
-                else:
-                    dismissedEntries +=1
-            else:
-                dismissedEntries +=1
-
-    outFile.close()
-
-    lines_clean = os.popen('wc -l {}'.format(fileName)).read().split(' ')[0]
-    list_lineCount.append(lines_clean)
-
-    print ("\t\t-> Amount of predictions kept:\t\t\t{:,}\n\t\t-> Amount of predictions dismissed:\t\t{:,}".format(int(lines_clean),dismissedEntries))
-
-def Select_Target(cvout_file):
-    '''
-    Keep specified target in "slip_conf.py" file:
-    i.  Extract variable from "slip_conf.py" file.
-    ii. Check if "Predicted_Target" is the same as the specified target. If TRUE, then write line.
-    #   Currently working only for CHEMBL targets.
-    '''
-    global fileName, list_fileName, list_lineCount
-
-    if Keep_Predicted_Target != '':
-        if 'CHEMBL' in Keep_Predicted_Target:
-
-            keepTarget   = Keep_Predicted_Target
-            fileName     = fileName+'.'+keepTarget; list_fileName.append(fileName)
-
-            print(' ii.\tKeeping entries for predicted target "{}"'.format(Keep_Predicted_Target))
-            os.system("awk '($3 == \"{0}\")' {1} >> {2}".format(keepTarget,list_fileName[-2],fileName))
-
-            lines_target = os.popen('wc -l {}'.format(fileName)).read().split(' ')[0]
-            list_lineCount.append(lines_target)
-
-            print ("\t\t-> Amount of predictions for specified target:\t{:,}".format(int(lines_target)))
-
-        else:
-            print("[FATAL ERROR : Invalid specified predicted target ID, check 'slip_conf.py' file]")
-            exit(1)
-
-def Add_SMILES(cvout_file):
-    '''
-    Add canonical SMILES to each entry:
-    i.  Load to memory all the canonical SMILES from file "Chembl22_goldStd3_max.txt.ul.co" and of alternative SMILES file
-    ii.
-    '''
-    global fileName, list_fileName, list_lineCount
-
-    print(' iii.\tAdding canonical SMILES')
-
-    fileName = fileName+'.smiles'; list_fileName.append(fileName)
-    out      = open(fileName,'a+')
-
-    smiles   	= {}
-    co			= {}
-    alt_smiles 	= {}
-    alt_co		= {}
-    entry    	= 0
-
-    with open('/home/cvigilv/SLiP/Dependencies/Chembl22_goldStd3_max.txt.ul.co') as file:
-        for line in file:
-            tokens              = line.rstrip().split('\t')
-            smiles[tokens[1]]   = tokens[0]
-            co[tokens[2]]		= tokens[1]
-
-    if ALTsmiles not in [None, 'None']:
-        with open(ALTsmiles) as file:
-            for line in file:
-                tokens              = line.rstrip().split('\t')
-                alt_smiles[tokens[1]]   = tokens[0]
-                alt_co[tokens[1]]		= tokens[2]
-
-    with open(cvout_file) as file:
-        for line in file:
-            tokens              = line.rstrip().split('\t')
-            chemblid            = tokens[1]
-
-            entry += 1
-            print ("\t\t-> {}".format(progressPercentage(entry)),end = '\r')
-
-            if chemblid in smiles and tokens[5] in smiles:
-                out.write(line.rstrip() + '\t' + smiles[chemblid] + '\t' + smiles[tokens[5]] + '\n')
-            elif chemblid in alt_smiles and tokens[5] in smiles:
-                out.write(line.rstrip() + '\t' + alt_smiles[chemblid] + '\t' + smiles[tokens[5]] + '\n')
-            elif chemblid in smiles and tokens[5] in alt_smiles:
-                out.write(line.rstrip() + '\t' + smiles[chemblid] + '\t' + alt_smiles[tokens[5]] + '\n')
-            elif chemblid in alt_smiles and tokens[5] in alt_smiles:
-                out.write(line.rstrip() + '\t' + alt_smiles[chemblid] + '\t' + alt_smiles[tokens[5]] + '\n')
-            else:
-                sys.stderr.write('ERROR: SMILES not found for ID %s\n' % chemblid)
-
-    out.close()
-
-    lines_smiles = os.popen('wc -l {}'.format(cvout_file+'.smiles')).read().split(' ')[0]
-    list_lineCount.append(lines_smiles)
-
-def Add_Info(cvout_file):
-    '''
-    Add relevant information for filtering steps:
-    i.   Load to memory "Query_Ligand" Pfam, known targets, max clinical phase & number of atoms.
-    ii.  Load to memory "Hit_Ligand" Pfam and known targets.
-    iii.
-
-    '''
-    global fileName, list_fileName, list_lineCount
-
-    print('\n iv.\tAdding useful information to entries (Pfam of known targets, max clinical phase, number of atoms, etc.)')
-
-    fileName    = fileName+'.pfam+mphase+natoms'; list_fileName.append(fileName)
-    out         = open(fileName,'a+')
-    entryN      = 0
-
-    # Information loaded to memory is stored here
-    pfam        = {}
-    max_phase   = {}
-    natoms      = {}
-    lig_pfam    = defaultdict(set)
-    targets     = defaultdict(set)
-
-    with open('/home/cvigilv/SLiP/Dependencies/chembl22_broad2.txt', 'r') as ints:
-        for line in ints:
-            tokens  = line.rstrip().split('\t')
-            target  = tokens[0]
-            ligid   = tokens[1]
-            pfam_id = tokens[4]
-            mphase  = tokens[11]
-
-            natoms[ligid]       = tokens[12]
-            pfam[target]        = pfam_id
-            max_phase[ligid]    = mphase
-
-            targets[ligid].add(target)
-            lig_pfam[ligid].update(pfam_id.strip().split(','))      # Add PFam IDs of this target to the set of known IDs of this ligand
-
-    print('\t\t-> Loaded "chembl_broad.txt" to memory')
-
-    with open(cvout_file, 'r') as cvout:
-        for line in cvout:
-            tokens      = line.rstrip().split('\t')
-            qry_ligid   = tokens[1]                                 # Query ligand
-            pred_target = tokens[2]                                 # Predicted target
-            #         Original line          Known targets of the query ligand     PFam IDs of the known trgs   PFams of predicted trg Max clinical phase of query
-            out.write(line.rstrip() + '\t '+ ','.join(targets[qry_ligid]) + '\t' + ','.join(lig_pfam[qry_ligid]) + '\t' + pfam[pred_target] + '\t' + max_phase[qry_ligid] + '\t' + natoms[qry_ligid] + '\n')#  ''+'\t'+ min_act[(qry_ligid, target)] + '\t' + avg_act[(qry_ligid, target)] + '\t' + max_act[(qry_ligid, target)] + '\n')
-
-            entryN += 1
-            print ("\t\t-> {}".format(progressPercentage(entryN)),end = '\r')
-    out.close()
-
-    lines_pfam = os.popen('wc -l {}'.format(fileName)).read().split(' ')[0]
-    list_lineCount.append(lines_pfam)
-
-def MySQL(cvout_file):
-    '''
-    Check if prediction exist in chembl_23 database:
-    i.  Get information from input file and assign to variables.
-    ii. Run MySQL query to check existance of ligand-protein interaction. If FALSE, write line to output file.
-    #   This segment has issues with some harcoded variables.
-    #+  Slowest step in the pìpeline. Need to see way to minimize this issue.
-    '''
-    global fileName, list_fileName, list_lineCount, commonPfam_cutoff
-
-    print('\n v.\tMySQL query filter')
-
-
-    fileName = fileName+'.MySQL'; list_fileName.append(fileName)
-    out      = open(fileName,'a+')
-    entryN   = 0
-
-    db = pymysql.connect("localhost","root","123","chembl_23")
-
-    with open(cvout_file, 'r') as ints:
-        for line in ints:
-            tokens  = line.rstrip().split('\t')
-            pfam    = tokens[10].strip().split(',')             # Pfam IDs of the predicted target
-            pfam    = [x for x in pfam if x.startswith('PF')]
-
-            if len(pfam) == 0:
-                continue
-
-            ligid   = tokens[2]
-            target  = tokens[3]
-            cursor  = db.cursor()
-            results = []
-
-            sql = """SELECT * FROM activities act
-                JOIN molecule_dictionary    AS md ON act.molregno    = md.molregno
-                JOIN assays                 AS a  ON a.assay_id      = act.assay_id
-                JOIN target_dictionary      AS td ON a.tid           = td.tid
-                LEFT JOIN target_components AS tc ON td.tid          = tc.tid
-                LEFT JOIN component_domains AS cd ON tc.component_id = cd.component_id
-                LEFT JOIN domains           AS do ON cd.domain_id    = do.domain_id
-                WHERE md.chembl_id = '%s' AND (td.chembl_id = '%s' OR (do.domain_type = 'Pfam-A' AND do.source_domain_id IN ('%s')))""" % (ligid, target, "','".join(pfam))
-
-            cursor.execute(sql)
-
-            entryN += 1
-            print ("\t\t-> {}".format(progressPercentage(entryN)),end = '\r')
-
-            if cursor.rowcount <= 0:                            # Currently hardcoded, eventhough the configuration variable exist. CHECK FOR NEXT VERSION!
-                out.write(line)
-
-    db.close()
-    out.close()
-
-    lines_mysql = os.popen('wc -l {}'.format(fileName)).read().split(' ')[0]
-    list_lineCount.append(lines_mysql)
-
-def Add_Molport(cvout_file,instock):
-    '''
-    Add MolPort ID for experimental checking of predictions:
-    i.  Load to memory MolPort db ("InStock" or "Boutique").
-    ii. Write all MolPort ID's (concatenated) for each "Query_Ligand" of input file.
-    #   2 columns are added in the pipeline: "InStock" Molport & "Boutique" Molport.
-    #+  Currently (v_1.0) only adding "InStock" Molport due too memory issues in archimedes.
-    '''
-    global fileName, list_fileName, list_lineCount
-
-    print('\n vi.\tAdding MolPort ID\'s')
-
-    entryN = 0
-    chembl2molport = defaultdict(set)
-
-    if instock == 1:
-        fileName    = fileName+'.instock'; list_fileName.append(fileName)
-        out         = open(fileName,'a')
-
-        with open('/home/cvigilv/SLiP/Dependencies/molport.instock.can', 'r') as file:
-            for line in file:
-                line    = line.rstrip('\n')
-                tokens  = line.split('\t')
-                smiles  = tokens[0]
-                molport = tokens[1]
-
-                chembl2molport[smiles].add(molport)
-
-    elif instock == 0:
-        fileName    = fileName+'.boutique'; list_fileName.append(fileName)
-        out         = open(fileName,'a')
-
-        with open('/home/cvigilv/SLiP/Dependencies/molport.notinstock.can', 'r') as file:
-            for line in file:
-                line    = line.rstrip('\n')
-                tokens  = line.split('\t')
-                smiles  = tokens[0]
-                molport = tokens[1]
-
-                chembl2molport[smiles].add(molport)
-
-    with open(cvout_file, 'r') as cvout:
-        for line in cvout:
-            line    = line.rstrip()
-            tokens  = line.split('\t')
-            smiles  = tokens[0]
-
-            entryN += 1
-            print ("\t\t-> {}".format(progressPercentage(entryN)),end = '\r')
-
-            if smiles in chembl2molport:
-                out.write(line + '\t' + ','.join(list(chembl2molport[smiles])) + '\n')
-                out.flush()                     # Problems with size of line solved with this.
-            else:
-                out.write(line + '\t\n')
-                out.flush()                     # Problems with size of line solved with this.
-
-    out.close()
-
-    lines_molport    = os.popen('wc -l {}'.format(fileName)).read().split(' ')[0]
-    list_lineCount.append(lines_molport)
-
-def Tc_Cutoff(cvout_file):
-    '''
-    Keep entries with "Tc" greater or equal to "x" and less than "y":
-    i. Checks if "Tc" of each line is between desired range specified in the configuration file.
-    '''
-    global fileName, list_fileName, list_lineCount, Tc_min, Tc_max
-
-    print('\n vii.\tKeeping cases with Tc in [{},{}[ range'.format(Tc_min,Tc_max))
-
-    Tc_name     = '.Tc_ge{}_lt{}'.format(Tc_min,Tc_max)
-    fileName    = fileName+Tc_name; list_fileName.append(fileName)
-
-    outFile = open(fileName,'a')
-    Tc_min  = float(Tc_min)
-    Tc_max  = float(Tc_max)
-    entryN  = 0
-
-    with open(cvout_file) as file:
-        for line in file:
-            tokens  = line.rstrip().split('\t')
-            Tc      = float(tokens[4])
-
-            entryN += 1
-            print ("\t\t-> {}".format(progressPercentage(entryN)),end = '\r')
-
-            if Tc < Tc_max:
-                if Tc >= Tc_min:
-                    outFile.write(line)
-
-
-    outFile.close()
-
-    lines_Tc = os.popen('wc -l {}'.format(fileName)).read().split(' ')[0]
-    list_lineCount.append(lines_Tc)
-
-def MaxPhase_Cutoff(cvout_file):
-    '''
-    Keep entries with "Max_Phase" greater or equal to "x" and less than "y":
-    i. Checks if "MaxPhase" of each line is between desired range specified in the configuration file.
-    '''
-    global fileName, list_fileName, list_lineCount, mphase_min, mphase_max
-
-    print('\n viii.\tKeeping cases with "MaxPhase" in [{},{}[ range'.format(mphase_min,mphase_max))
-
-    maxPhase_name   = '.maxPhase_ge{}_lt{}'.format(Tc_min,Tc_max)
-    fileName        = fileName+maxPhase_name; list_fileName.append(fileName)
-
-    outFile         = open(fileName,'a')
-    maxPhase_min    = float(mphase_min)
-    maxPhase_max    = float(mphase_max)
-    entryN          = 0
-
-    with open(cvout_file) as file:
-        for line in file:
-            tokens  = line.rstrip().split('\t')
-            maxPhase= float(tokens[12])
-
-            entryN += 1
-            print ("\t\t-> {}".format(progressPercentage(entryN)),end = '\r')
-
-            if maxPhase < maxPhase_max:
-                if maxPhase >= maxPhase_min:
-                    outFile.write(line)
-
-
-    outFile.close()
-
-    lines_MaxPhase = os.popen('wc -l {}'.format(fileName)).read().split(' ')[0]
-    list_lineCount.append(lines_MaxPhase)
-
-def TopX(cvout_file):
-    '''
-    Keeps top "N" (specified in configuration file) predictions:
-    i.  Load input to memory and enumerate entries.
-    ii. Sort entries based in "Tc"
-    iii.Write first "N" entries to output file.
-    '''
-    global fileName, list_fileName, list_lineCount, TopX_cutoff
-
-    print('\n ix.\tKeeping Top {} cases'.format(TopX_cutoff))
-
-
-    fileName    = fileName+'.top'+str(TopX_cutoff); list_fileName.append(fileName)
-    outFile     = open(fileName,'a')
-    N_cutoff    = int(TopX_cutoff)
-
-    # Variable to load to memory
-    cvout = []
-
-    with open(cvout_file) as file:
-        for line in file:
-            tokens = line.rstrip().split('\t')
-            cvout.append(tokens)
-
-    # Sort input file based in "Tc"
-    cvout.sort(key=lambda k: float(k[4]), reverse=True)
-
-    for entryN,line in enumerate(cvout):
-        if entryN == N_cutoff:
-            break
-
-        outFile.write('\t'.join(line)+'\n')
-        print ("\t\t-> {}".format(progressPercentage(entryN)),end = '\r')
-
-
-    outFile.close()
-
-    lines_TopX = os.popen('wc -l {}'.format(fileName)).read().split(' ')[0]
-    list_lineCount.append(lines_TopX)
 
 # MAIN
-#+ Assign command arguments to variables for easier lecture
-cvout_file = sys.argv[1]
-config_file = sys.argv[2]
+init_time = datetime.datetime.now()
+print('SchuellerLab Ligand Priorization Pipepline - version {v}'.format(v = __version__))
+print('Start time: {time}'.format(time = init_time))
 
-#+ Initialize SLiP
-os.system('clear')
-print('\nSLIP - SchuellerLab LIgand Pipeline\n%s\n' % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-initializeSLIP()
+# Create output directory
+print('\nCreating output directory...',end = '\r')
+os.system('mkdir {output_dir}'.format(output_dir = Output_Directory))
+print('\nCreating output directory... DONE!')
 
-#+ Filtering Stage
-print("\n\n>> SLiP - Ligand Filtering <<")
+# Load output file to pandas dataframe
+print('\nLoading output file to dataframe...')
+in_df = pd.read_csv(Input_Interactions,
+                    sep = '\t',
+                    names = ['Fold', 'Query ligand ChEMBL ID', 'Hit target ChEMBL ID', Opt_SimilarityMeasure, 'Hit ligand ID', 'Query target ID', 'TP'],
+                    header = None,
+                    index_col = False,
+                    engine = 'python')
 
-Clean_Input(fileName)
-Select_Target(fileName)
-Add_SMILES(fileName)
-Add_Info(fileName)
-MySQL(fileName)
-Add_Molport(fileName,1)
-#Tc_Cutoff(fileName)
-MaxPhase_Cutoff(fileName)
-TopX(fileName)
+print('--> Cleaning output file from buggy entries...',end = '\r')
+in_df = in_df[in_df[Opt_SimilarityMeasure] >= 0]
+print('--> Cleaning output file from buggy entries... done!')
 
-print("-> Ligand Filtering : DONE!\n")
+if Output_Plots == True:
+    print('--> Saving distribution plot for output file...',end = '\r')
+    sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
+    plt.ylabel(Opt_SimilarityMeasure)
+    plt.title('{sim} distribution separated by TP'.format(sim = Opt_SimilarityMeasure))
+    plt.savefig(Output_Directory+'/'+Default_filename+'.distribution_boxplot.png', dpi = 300)
+    plt.cla()
 
-#+ Create table with results of "Ligand Filtering" section
-log = open('slip.log','w+')
+    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Output_Directory+'/'+Default_filename+'.distribution_hist.png')
 
-if (list_fileName and list_lineCount):
-    Results = prettytable.PrettyTable(["File name", "Entries"])
+    print('--> Saving distribution plot for output file... done!')
 
-    Results.align["File name"]  = "l"           #++ Align text to left side
-    Results.align["Entries"]    = "r"           #++ Align text to right side
+print('Loading output file to dataframe... DONE!')
 
-    a = 0
-    for i in list_fileName:
-        Results.add_row([i,'{:,}'.format(int(list_lineCount[a]))])
-        a += 1
+# Filter output file based in similarity measure threshold
+print('Filtering output by {sim} in range ]{min}, {max}]...'.format(sim = Opt_SimilarityMeasure, min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
+in_df = in_df[(in_df[Opt_SimilarityMeasure] <= Opt_maxSimilarity) & (in_df[Opt_SimilarityMeasure] > Opt_minSimilarity)]
 
-    print('\nTable 1: Amount of entries for each step of SLiP "Ligand Filtering"')
-    print(Results)
+if Output_Plots == True:
+    print('--> Saving distribution plot for filtered output file...',end = '\r')
+    sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
+    plt.ylabel(Opt_SimilarityMeasure)
+    plt.title('{sim} distribution for range ]{min}, {max}] separated by TP'.format(sim = Opt_SimilarityMeasure,  min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
+    plt.savefig(Output_Directory+'/'+Default_filename+'.sim.filtered_dist_box.png', dpi = 300)
+    plt.cla()
 
-    # log.write('SLIP - Log')
-    # log.write('\nTable 1: Amount of entries for each step of SLiP "Ligand Filtering"')
-    # log.write(str(Results))
+    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Output_Directory+'/'+Default_filename+'.sim.filtered_dist_hist.png', bins = [Opt_minSimilarity + (Opt_maxSimilarity - Opt_minSimilarity)/20 * i for i in range(0,21)])
 
-#+ Preparation Stage
-print("\n\n>> SLiP - Ligand Preparation<<\n")
-os.system('moebatch -load /home/cvigilv/SLiP/Dependencies/slip_prepare.svl -exec "PrepareLigands \'{}\'"'.format(fileName))
+    print('--> Saving distribution plot for filtered output file... done!')
+
+# Filter output file based in "TP" value
+print('Removing entries with "TP" values equal to 1...',end='\r')
+in_df = in_df[in_df['TP'] == 0]
+print('Removing entries with "TP" values equal to 1... DONE!')
+
+# Add SMILES from SMILES file to query ligand based on ChEMBL ID
+print('Adding SMILES of query ligand...', end = '\r')
+smiles_df = pd.read_csv('/home/cvigilv/Dropbox/Chembl22_goldStd3_max.txt.ul.co',
+                        sep = '\t',
+                        names = ['SMILES', 'Query ligand ChEMBL ID'],
+                        header = None,
+                        index_col = False)
+in_df = pd.merge(in_df, smiles_df, on = 'Query ligand ChEMBL ID', how = 'left')
+print('Adding SMILES of query ligand... DONE!' )
+
+# Add information for query ligand and predicted target for next filters
+print('Adding information to entries...')
+
+Lig_info = defaultdict(dict)
+Trg_info = defaultdict(dict)
+
+with open(Input_Broad, 'r') as ints:
+    ints.readline()
+    for line in ints:
+        tokens  = line.rstrip().split('\t')
+        trgid 	= tokens[0]
+        ligid   = tokens[1]
+        pfam_id = tokens[4]
+        mphase  = tokens[-3]
+        natoms 	= tokens[-2]
+
+        if ligid in Lig_info:
+            Lig_info[ligid]['Query ligand known targets'].add(trgid)
+            Lig_info[ligid]['Query ligand known Pfam ID\'s'].update(pfam_id.strip().split(',')) # Convert concatenated Pfam ID's to python list
+
+        else:
+            Lig_info[ligid]['Query ligand known targets'] = set([trgid])
+            Lig_info[ligid]['Query ligand known Pfam ID\'s'] = set(pfam_id.strip().split(',')) # Convert concatenated Pfam ID's to python list
+            Lig_info[ligid]['Number of heavy atoms'] = natoms
+            Lig_info[ligid]['Max Clinical Phase'] = int(mphase)
+
+        Lig_info[ligid]['Number of known targets'] = len(list(Lig_info[ligid]['Query ligand known targets']))
+        Lig_info[ligid]['Number of known Pfam ID\'s'] = len(list(Lig_info[ligid]['Query ligand known Pfam ID\'s']))
+
+        Trg_info[trgid]['Hit target known Pfam ID\'s'] = set(pfam_id.strip().split(','))
+
+Lig_info = pd.DataFrame.from_dict(Lig_info, orient='index')
+Lig_info['Query ligand ChEMBL ID'] = Lig_info.index
+Lig_info = Lig_info.reset_index(drop = True)
+
+Trg_info = pd.DataFrame.from_dict(Trg_info, orient='index')
+Trg_info['Hit target ChEMBL ID'] = Trg_info.index
+Trg_info = Trg_info.reset_index(drop = True)
+print('--> Loading "broad" selection of ChEMBL into memory... done!')
+
+print('--> Adding "broad" information of query ligand...', end = '\r')
+in_df = pd.merge(in_df, Lig_info, on = 'Query ligand ChEMBL ID', how = 'left')
+print('--> Adding "broad" information of query ligand... done!')
+
+print('--> Adding "broad" information of hit target...', end = '\r')
+in_df = pd.merge(in_df, Trg_info, on = 'Hit target ChEMBL ID', how = 'left')
+print('--> Adding "broad" information of hit target... done!')
+print('Adding information to entries... DONE!')
+
+# Filter output file based in maximum clinical phase threshold
+print('Filtering output by Max clinical phase in range ]{min}, {max}]...'.format(min = str(Opt_minClinicalPhase), max = str(Opt_maxClinicalPhase)), end='\r')
+in_df = in_df[(in_df['Max Clinical Phase'] <= Opt_maxClinicalPhase) & (in_df['Max Clinical Phase'] > Opt_minClinicalPhase)]
+print('Filtering output by Max clinical phase in range ]{min}, {max}]... DONE!'.format(min = str(Opt_minClinicalPhase), max = str(Opt_maxClinicalPhase)))
+
+# Run MySQL query for temporal validation of predicted protein-ligand interaction.
+print('Comparing predictions with ChEMBL database...', end='\r')
+db = pymysql.connect("localhost", "root", "123", Input_ChEMBL)         # Connect to MySQL server containing ChEMBL db
+
+for index, row in in_df.iterrows():                                    # Iterate over each entry of the given dataframe
+    ligid = row['Query ligand ChEMBL ID']
+    trgid = row['Hit target ChEMBL ID']
+
+    cursor = db.cursor()                                               # Create cursor for MySQL
+
+    sql_query = """SELECT * FROM activities act
+            JOIN molecule_dictionary    AS md ON act.molregno    = md.molregno
+            JOIN assays                 AS a  ON a.assay_id      = act.assay_id
+            JOIN target_dictionary      AS td ON a.tid           = td.tid
+            LEFT JOIN target_components AS tc ON td.tid          = tc.tid
+            LEFT JOIN component_domains AS cd ON tc.component_id = cd.component_id
+            LEFT JOIN domains           AS do ON cd.domain_id    = do.domain_id
+    WHERE md.chembl_id = '%s' AND td.chembl_id = '%s'""" % (ligid, trgid)
+
+    cursor.execute(sql_query)
+
+    if cursor.rowcount <= 0:
+        in_df.loc[index, 'Found in {}'.format(Input_ChEMBL)] = False
+    else:
+        in_df.loc[index, 'Found in {}'.format(Input_ChEMBL)] = True
+
+db.close()
+print('Comparing predictions with ChEMBL database... DONE!')
+
+# Compare Pfam ID's of query ligand and hit target (predicted ligand-protein pair).
+print('Comparing Pfam ID\'s of query ligand and hit target...')
+print('--> Finding common Pfam ID\'s for query ligand - hit target pair...', end='\r')
+in_df['Common Pfam ID\'s'] = in_df.apply(lambda row: [x for x in list(row['Query ligand known Pfam ID\'s']) if x in list(row['Hit target known Pfam ID\'s'])], axis=1) # List common Pfam ID's between query ligand and hit target (predicted ligand-protein pair).
+print('--> Finding common Pfam ID\'s for query ligand - hit target pair... done!')
+
+print('--> Counting common Pfam ID\'s for query ligand - hit target pair...', end='\r')
+in_df['Amount of common Pfam ID\'s'] = in_df.apply(lambda row: len(row['Common Pfam ID\'s']), axis=1) # Count common Pfam ID's for further filtering down the line.
+print('--> Counting common Pfam ID\'s for query ligand - hit target pair... done!')
+
+print('--> Filtering based in number of common Pfam ID\'s...', end='\r')
+in_df = in_df[in_df['Amount of common Pfam ID\'s'] <= Opt_PfamCutoff]
+print('--> Filtering based in number of common Pfam ID\'s... done!')
+print('Comparing Pfam ID\'s of query ligand and hit target... DONE!')
+
+if Output_Plots == True:
+    print('--> Saving distribution plot for filtered predictions...',end = '\r')
+    sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
+    plt.ylabel(Opt_SimilarityMeasure)
+    plt.title('{sim} distribution separated by TP'.format(sim = Opt_SimilarityMeasure))
+    plt.savefig(Output_Directory+'/'+Default_filename+'.hist.distribution_boxplot.png', dpi = 300)
+    plt.cla()
+
+    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Output_Directory+'/'+Default_filename+'.slip.distribution_hist.png')
+
+    print('--> Saving distribution plot for filtered predictions... done!')
+
+# Filter output file based in "TP" value
+print('Removing entries with "TP" values equal to 1...',end='\r')
+in_df = in_df[in_df['TP'] == 0]
+print('Removing entries with "TP" values equal to 1... DONE!')
+
+# Order by similarity measure and select the top X predictions
+print('Keeping top {x} protein-ligand interaction predictions...', end='\r')
+in_df = in_df.sort_values(Opt_SimilarityMeasure, ascending=False)
+in_df = in_df.head(Opt_TopX)
+print('Keeping top {x} protein-ligand interaction predictions... DONE!')
+
+print('Saving predictions as a .csv file...',end = '\r')
+in_df.to_csv(Output_Directory+'/'+Output_File, index=False)
+print('Saving predictions as a .csv file... DONE!')
+
+print('\nFINISHED RUNNING SLIP! (TIME ELAPSED: {})'.format(datetime.datetime.now() - init_time))
