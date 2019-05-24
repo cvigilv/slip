@@ -26,7 +26,7 @@ configs.read(sys.argv[1])
 
 Input_Interactions = os.path.abspath(configs.get('Input', 'Interactions file'))
 Input_Broad        = os.path.abspath(configs.get('Input', 'Broad file'))
-Input_ChEMBL       = os.path.abspath(configs.get('Options', 'ChEMBL version'))
+Input_ChEMBL       = configs.get('Options', 'ChEMBL version')
 
 Opt_JustTarget       = configs.get('Options', 'Keep target')
 Opt_JustLigand       = configs.get('Options', 'Keep ligand')
@@ -43,13 +43,15 @@ Output_File      = configs.get('Output', 'Output file')
 Output_Plots     = configs.getboolean('Output', 'Generate plots')
 Output_Prepare   = configs.getboolean('Output', 'Prepare file')
 
+Default_filename = Input_Interactions.split('/')[-1]
+
 # Default settings behaviour
 if Opt_SimilarityMeasure == '':
     Opt_SimilarityMeasure = 'Similarity measure'
 if Output_Directory == '':
-    Output_Directory = Input_Interactions+'-'+datetime.datetime.now().strftime("%Y.%m.%d_%H:%M:%S")).rstrip()
+    Output_Directory = Input_Interactions+('-'+datetime.datetime.now().strftime("%Y.%m.%d_%H:%M:%S")).rstrip()
 if Output_File == '':
-    Output_File+'.slip'
+    Output_File = Default_filename+'.slip'
 
 color_neg = '#527AB2'
 color_pos = '#FF4528'
@@ -72,7 +74,7 @@ def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i f
 # MAIN
 init_time = datetime.datetime.now()
 print('SchuellerLab Ligand Priorization Pipepline - version {v}'.format(v = __version__))
-print('Start time: {time}'.format(time = init_time)
+print('Start time: {time}'.format(time = init_time))
 
 # Create output directory
 print('\nCreating output directory...',end = '\r')
@@ -85,21 +87,22 @@ in_df = pd.read_csv(Input_Interactions,
                     sep = '\t',
                     names = ['Fold', 'Query ligand ChEMBL ID', 'Hit target ChEMBL ID', Opt_SimilarityMeasure, 'Hit ligand ID', 'Query target ID', 'TP'],
                     header = None,
-                    index_col = False) # Hardcoded options
+                    index_col = False,
+                    engine = 'python')
 
 print('--> Cleaning output file from buggy entries...',end = '\r')
 in_df = in_df[in_df[Opt_SimilarityMeasure] >= 0]
-print('--> Cleaning output file from buggy entries...'+'done!'.rjust(int(os.get_terminal_size().columns)))
+print('--> Cleaning output file from buggy entries... done!')
 
 if Output_Plots == True:
     print('--> Saving distribution plot for output file...',end = '\r')
     sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
     plt.ylabel(Opt_SimilarityMeasure)
     plt.title('{sim} distribution separated by TP'.format(sim = Opt_SimilarityMeasure))
-    plt.savefig(Output_Directory+'/'+Input_Interactions+'.distribution_boxplot.png', dpi = 300)
+    plt.savefig(Output_Directory+'/'+Default_filename+'.distribution_boxplot.png', dpi = 300)
     plt.cla()
 
-    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Input_Interactions+'.distribution_hist.png')
+    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Output_Directory+'/'+Default_filename+'.distribution_hist.png')
 
     print('--> Saving distribution plot for output file... done!')
 
@@ -114,10 +117,10 @@ if Output_Plots == True:
     sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
     plt.ylabel(Opt_SimilarityMeasure)
     plt.title('{sim} distribution for range ]{min}, {max}] separated by TP'.format(sim = Opt_SimilarityMeasure,  min = str(Opt_minSimilarity), max = str(Opt_maxSimilarity)))
-    plt.savefig(Input_Interactions+'.filtered_distribution_1.png', dpi = 300)
+    plt.savefig(Output_Directory+'/'+Default_filename+'.sim.filtered_dist_box.png', dpi = 300)
     plt.cla()
 
-    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Input_Interactions+'.filtered_dist_hist.png', bins = [Opt_minSimilarity + (Opt_maxSimilarity - Opt_minSimilarity)/20 * i for i in range(0,21)])
+    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Output_Directory+'/'+Default_filename+'.sim.filtered_dist_hist.png', bins = [Opt_minSimilarity + (Opt_maxSimilarity - Opt_minSimilarity)/20 * i for i in range(0,21)])
 
     print('--> Saving distribution plot for filtered output file... done!')
 
@@ -239,10 +242,10 @@ if Output_Plots == True:
     sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
     plt.ylabel(Opt_SimilarityMeasure)
     plt.title('{sim} distribution separated by TP'.format(sim = Opt_SimilarityMeasure))
-    plt.savefig(Output_Directory+'/'+Input_Interactions+'.hist.distribution_boxplot.png', dpi = 300)
+    plt.savefig(Output_Directory+'/'+Default_filename+'.hist.distribution_boxplot.png', dpi = 300)
     plt.cla()
 
-    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Input_Interactions+'.slip.distribution_hist.png')
+    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Output_Directory+'/'+Default_filename+'.slip.distribution_hist.png')
 
     print('--> Saving distribution plot for filtered predictions... done!')
 
@@ -258,7 +261,7 @@ in_df = in_df.head(Opt_TopX)
 print('Keeping top {x} protein-ligand interaction predictions... DONE!')
 
 print('Saving predictions as a .csv file...',end = '\r')
-in_df.to_csv(,index=False)
+in_df.to_csv(Output_Directory+'/'+Output_File, index=False)
 print('Saving predictions as a .csv file... DONE!')
 
 print('\nFINISHED RUNNING SLIP! (TIME ELAPSED: {})'.format(datetime.datetime.now() - init_time))
