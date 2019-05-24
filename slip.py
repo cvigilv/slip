@@ -234,7 +234,6 @@ in_df = in_df[in_df['Amount of common Pfam ID\'s'] <= Opt_PfamCutoff]
 print('--> Filtering based in number of common Pfam ID\'s... done!')
 print('Comparing Pfam ID\'s of query ligand and hit target... DONE!')
 
-
 if Output_Plots == True:
     print('--> Saving distribution plot for filtered predictions...',end = '\r')
     sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
