@@ -6,23 +6,27 @@ __version__ = 0.0
 # DEPENDENCIES
 import sys
 import os
-import pandas as pd
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import seaborn as sns
 import datetime
 import pymysql
+
+import matplotlib
+matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
 from collections import defaultdict
 from configparser import ConfigParser
+
 
 # SETTINGS
 configs = ConfigParser()
 configs.read(sys.argv[1])
 
-Input_Interactions = configs.get('Input', 'Interactions file')
-Input_Broad        = configs.get('Input', 'Broad file')
-Input_ChEMBL       = configs.get('Options', 'ChEMBL version')
+Input_Interactions = os.path.abspath(configs.get('Input', 'Interactions file'))
+Input_Broad        = os.path.abspath(configs.get('Input', 'Broad file'))
+Input_ChEMBL       = os.path.abspath(configs.get('Options', 'ChEMBL version'))
 
 Opt_JustTarget       = configs.get('Options', 'Keep target')
 Opt_JustLigand       = configs.get('Options', 'Keep ligand')
@@ -39,7 +43,13 @@ Output_File      = configs.get('Output', 'Output file')
 Output_Plots     = configs.getboolean('Output', 'Generate plots')
 Output_Prepare   = configs.getboolean('Output', 'Prepare file')
 
-if Opt_SimilarityMeasure == '': Opt_SimilarityMeasure = 'Similarity measure'
+# Default settings behaviour
+if Opt_SimilarityMeasure == '':
+    Opt_SimilarityMeasure = 'Similarity measure'
+if Output_Directory == '':
+    Output_Directory = Input_Interactions+'-'+datetime.datetime.now().strftime("%Y.%m.%d_%H:%M:%S")).rstrip()
+if Output_File == '':
+    Output_File+'.slip'
 
 color_neg = '#527AB2'
 color_pos = '#FF4528'
@@ -51,7 +61,6 @@ def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i f
     for i, state in enumerate(states):
         plt.hist(df[df[column] == state][Opt_SimilarityMeasure], density = True, color = colours[i], label = labels[i], alpha = 0.5, bins = bins)
 
-
     plt.xlabel(Opt_SimilarityMeasure)
     plt.ylabel('Relative count (%)')
     plt.legend(title = column)
@@ -61,8 +70,14 @@ def TP_Histogram(df, column, states, labels, colours, filename, bins = [0.05*i f
 
 
 # MAIN
+init_time = datetime.datetime.now()
 print('SchuellerLab Ligand Priorization Pipepline - version {v}'.format(v = __version__))
-print('Start time: {time}'.format(time = datetime.datetime.now()))
+print('Start time: {time}'.format(time = init_time)
+
+# Create output directory
+print('\nCreating output directory...',end = '\r')
+os.system('mkdir {output_dir}'.format(output_dir = Output_Directory))
+print('\nCreating output directory... DONE!')
 
 # Load output file to pandas dataframe
 print('\nLoading output file to dataframe...')
@@ -81,7 +96,7 @@ if Output_Plots == True:
     sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
     plt.ylabel(Opt_SimilarityMeasure)
     plt.title('{sim} distribution separated by TP'.format(sim = Opt_SimilarityMeasure))
-    plt.savefig(Input_Interactions+'.distribution_boxplot.png', dpi = 300)
+    plt.savefig(Output_Directory+'/'+Input_Interactions+'.distribution_boxplot.png', dpi = 300)
     plt.cla()
 
     TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Input_Interactions+'.distribution_hist.png')
@@ -211,16 +226,40 @@ in_df['Common Pfam ID\'s'] = in_df.apply(lambda row: [x for x in list(row['Query
 print('--> Finding common Pfam ID\'s for query ligand - hit target pair... done!')
 
 print('--> Counting common Pfam ID\'s for query ligand - hit target pair...', end='\r')
-in_df['Number of common Pfam ID\'s'] = in_df.apply(lambda row: len(row['Common Pfam ID\'s']), axis=1) # Count common Pfam ID's for further filtering down the line.
+in_df['Amount of common Pfam ID\'s'] = in_df.apply(lambda row: len(row['Common Pfam ID\'s']), axis=1) # Count common Pfam ID's for further filtering down the line.
 print('--> Counting common Pfam ID\'s for query ligand - hit target pair... done!')
 
 print('--> Filtering based in number of common Pfam ID\'s...', end='\r')
-in_df = in_df[in_df['Number of common Pfam ID\'s'] <= Opt_PfamCutoff]
+in_df = in_df[in_df['Amount of common Pfam ID\'s'] <= Opt_PfamCutoff]
 print('--> Filtering based in number of common Pfam ID\'s... done!')
 print('Comparing Pfam ID\'s of query ligand and hit target... DONE!')
 
-# Select the top X predictions
-print('Keeping top {x} protein-ligand interaction predictions...', end='\r')
-in_df = in_df.head(Opt_TopX)
 
+if Output_Plots == True:
+    print('--> Saving distribution plot for filtered predictions...',end = '\r')
+    sns.boxplot(x = 'TP', y = Opt_SimilarityMeasure, data = in_df, palette = colours_TP)
+    plt.ylabel(Opt_SimilarityMeasure)
+    plt.title('{sim} distribution separated by TP'.format(sim = Opt_SimilarityMeasure))
+    plt.savefig(Output_Directory+'/'+Input_Interactions+'.hist.distribution_boxplot.png', dpi = 300)
+    plt.cla()
+
+    TP_Histogram(in_df, 'TP', [0, 1], ['0', '1'], [color_neg, color_pos], Input_Interactions+'.slip.distribution_hist.png')
+
+    print('--> Saving distribution plot for filtered predictions... done!')
+
+# Filter output file based in "TP" value
+print('Removing entries with "TP" values equal to 1...',end='\r')
+in_df = in_df[in_df['TP'] == 0]
+print('Removing entries with "TP" values equal to 1... DONE!')
+
+# Order by similarity measure and select the top X predictions
+print('Keeping top {x} protein-ligand interaction predictions...', end='\r')
+in_df = in_df.sort_values(Opt_SimilarityMeasure, ascending=False)
+in_df = in_df.head(Opt_TopX)
 print('Keeping top {x} protein-ligand interaction predictions... DONE!')
+
+print('Saving predictions as a .csv file...',end = '\r')
+in_df.to_csv(,index=False)
+print('Saving predictions as a .csv file... DONE!')
+
+print('\nFINISHED RUNNING SLIP! (TIME ELAPSED: {})'.format(datetime.datetime.now() - init_time))
