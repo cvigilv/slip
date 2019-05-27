@@ -1,35 +1,22 @@
-<<<<<<< HEAD
-'''
-SLIP - SchuellerLab LIgand Pipeline
-version 0.2
+# =========================================================================================================
+# SLIP - SchuellerLab LIgand Pipeline
+# version 1.0
+#
+# by  Carlos Vigil, Andreas Schüller
+#
+# To run:
+#    $ python3 slip.py "input_file" "configuration_file"
+#
+# Changelog:
+#    -   2018.06.08      0.1     Carlos      Small changes in formats and bug fixes
+#    -   2018.11.14      0.2     Carlos      Added alternative directory option for missing SMILES
+#    -   2019.05.25      1.0     Carlos      Major rework, moved everything to pandas for faster processing
+# =========================================================================================================
 
-Authors:	Carlos Vigil, Andreas Schüller
-
-To run:
-    > python3 slip.py "input_file" "configuration_file"
-    where       input_file is a .txt file, configuration_file is a .py file;
-                both have specific formatting.
-
-Changelog:
-    -   2018.06.08	0.1     Carlos	First version
-    -	2018.11.14	0.2		Carlos	Added alternative directory option for missing SMILES
-
-
-Dependencies:
-    -   Python libraries:
-            ·   pymysql
-            ·   prettytable
-    -   MySQL:
-            ·   chembl_23
-    -   MOE 2018
-'''
-#test
-=======
->>>>>>> pandas
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 
-__version__ = 0.0
+__version__ = 1.0
 
 # DEPENDENCIES
 import sys
@@ -48,8 +35,10 @@ from collections import defaultdict
 from configparser import ConfigParser
 
 
+
 # SETTINGS
 configs = ConfigParser()
+configs.read(defaults.ini)
 configs.read(sys.argv[1])
 
 Input_Interactions = os.path.abspath(configs.get('Input', 'Interactions file'))
@@ -73,14 +62,11 @@ Output_Prepare   = configs.getboolean('Output', 'Prepare file')
 
 Default_filename = Input_Interactions.split('/')[-1]
 
-# Default settings behaviour
-if Opt_SimilarityMeasure == '':
-    Opt_SimilarityMeasure = 'Similarity measure'
-if Output_Directory == '':
+# Create folder with timestamp
+if Output_Directory == Input_Interactions+'.output':
     Output_Directory = Input_Interactions+('-'+datetime.datetime.now().strftime("%Y.%m.%d_%H:%M:%S")).rstrip()
-if Output_File == '':
-    Output_File = Default_filename+'.slip'
 
+# Graph colors
 color_neg = '#527AB2'
 color_pos = '#FF4528'
 colours_TP = {0: color_neg, 1: color_pos}
@@ -176,12 +162,12 @@ Trg_info = defaultdict(dict)
 with open(Input_Broad, 'r') as ints:
     ints.readline()
     for line in ints:
-        tokens  = line.rstrip().split('\t')
-        trgid 	= tokens[0]
-        ligid   = tokens[1]
+        tokens = line.rstrip().split('\t')
+        trgid = tokens[0]
+        ligid = tokens[1]
         pfam_id = tokens[4]
-        mphase  = tokens[-3]
-        natoms 	= tokens[-2]
+        mphase = tokens[-3]
+        natoms = tokens[-2]
 
         if ligid in Lig_info:
             Lig_info[ligid]['Query ligand known targets'].add(trgid)
